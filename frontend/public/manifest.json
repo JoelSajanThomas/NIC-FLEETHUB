@@ -1,0 +1,79 @@
+{
+  "name": "NIC FleetHub — Kuwait Fleet & Heavy Equipment Operations",
+  "short_name": "NIC FleetHub",
+  "description": "Enterprise fleet, central workshop, heavy equipment and inventory management system for National Industries Company (K.S.C.C) Kuwait.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["business", "productivity", "management", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Executive Dashboard",
+      "short_name": "Dashboard",
+      "description": "View live Kuwait fleet KPIs and operations",
+      "url": "/app#v-dashboard",
+      "icons": [{ "src": "/assets/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Fleet Register",
+      "short_name": "Fleet",
+      "description": "Search vehicles and heavy machinery",
+      "url": "/app#v-fleet",
+      "icons": [{ "src": "/assets/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Breakdown Report",
+      "short_name": "Breakdown",
+      "description": "Log new vehicle fault or voice complaint",
+      "url": "/app#v-complaints",
+      "icons": [{ "src": "/assets/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Central Workshop",
+      "short_name": "Workshop",
+      "description": "14-stage maintenance work orders",
+      "url": "/app#v-work-orders",
+      "icons": [{ "src": "/assets/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Heavy Store Inventory",
+      "short_name": "Store",
+      "description": "Spare parts catalog and stock movements",
+      "url": "/app#v-inventory",
+      "icons": [{ "src": "/assets/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

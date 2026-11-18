@@ -1,0 +1,14 @@
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching issues
+install! 'cocoapods', :deterministic_uuids => false
+
+target 'App' do
+  # Capacitor core pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+
+  # Add Capacitor Plugins
+  # pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
+end

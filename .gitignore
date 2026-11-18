@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Database & Runtime Data
+*.db-journal
+*.db-wal
+*.db-shm
+data/backups/fleethub-*.db
+backend/data/backups/fleethub-*.db
+backend/data/secret.key
+
+# Uploads
+data/uploads/*
+backend/uploads/documents/*
+backend/uploads/invoices/*
+backend/uploads/images/*
+backend/uploads/audio/*
+!data/uploads/.gitkeep
+!backend/uploads/documents/.gitkeep
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Mobile & Build
+.gradle/
+**/build/
+**/dist/
+*.apk
+*.aab
+*.dex
+local.properties
+
+# Test & run outputs
+backend/data/*_results.json
+

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devPath": "http://localhost:3000/app",
+    "distDir": "../../frontend/public"
+  },
+  "package": {
+    "productName": "NIC FleetHub",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "writeFile": true
+      },
+      "dialog": {
+        "all": false,
+        "open": true,
+        "save": true
+      },
+      "http": {
+        "all": true,
+        "scope": ["http://localhost:5000/*", "https://*.nic.com.kw/*"]
+      },
+      "notification": {
+        "all": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "Business",
+      "copyright": "Copyright © 2026 National Industries Company (K.S.C.C)",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "../../frontend/public/assets/icon-192x192.png",
+        "../../frontend/public/assets/icon-512x512.png"
+      ],
+      "identifier": "kw.com.nic.fleethub.tauri",
+      "longDescription": "Enterprise Fleet, Workshop & Heavy Equipment Management System for National Industries Company (Kuwait)",
+      "macOS": {
+        "frameworks": [],
+        "minimumSystemVersion": "10.15",
+        "exceptionDomain": "",
+        "signingIdentity": null,
+        "entitlements": null
+      },
+      "resources": [],
+      "shortDescription": "Kuwait Fleet & Heavy Equipment Management",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
+    "security": {
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: data: blob:"
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 820,
+        "resizable": true,
+        "title": "NIC FleetHub — Kuwait Fleet & Workshop Management",
+        "width": 1366,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "theme": "Dark"
+      }
+    ]
+  }
+}

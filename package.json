@@ -1,0 +1,29 @@
+{
+  "name": "nic-fleethub",
+  "version": "1.0.0",
+  "description": "NIC FleetHub — Cross-Platform Enterprise Fleet, Workshop & Heavy Equipment Management System",
+  "scripts": {
+    "start:backend": "python backend/src/app.py",
+    "start:web": "node frontend/dev-server.js",
+    "start:desktop": "npm --prefix desktop run start",
+    "build:pwa": "node -e \"console.log('NIC FleetHub PWA Manifest and Service Worker Verified')\"",
+    "build:desktop:win": "npm --prefix desktop run build:win",
+    "build:desktop:mac": "npm --prefix desktop run build:mac",
+    "mobile:sync": "npx cap sync",
+    "mobile:android": "npx cap open android",
+    "mobile:ios": "npx cap open ios",
+    "test:checkpoints": "python scratch/run_20_checkpoints.py"
+  },
+  "keywords": [
+    "cross-platform",
+    "fleet-management",
+    "kuwait",
+    "pwa",
+    "electron",
+    "capacitor",
+    "tauri",
+    "heavy-equipment"
+  ],
+  "author": "National Industries Company (K.S.C.C)",
+  "license": "UNLICENSED"
+}

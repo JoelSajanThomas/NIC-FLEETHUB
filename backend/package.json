@@ -1,0 +1,14 @@
+{
+  "name": "nic-fleethub-backend",
+  "version": "1.0.0",
+  "description": "Backend API service for NIC FleetHub enterprise fleet and workshop management",
+  "main": "src/app.py",
+  "scripts": {
+    "dev": "python src/app.py",
+    "start": "python src/app.py",
+    "test": "python -m unittest discover tests"
+  },
+  "keywords": ["fleet", "workshop", "inventory", "management", "kuwait"],
+  "author": "National Industries Company (K.S.C.C)",
+  "license": "UNLICENSED"
+}

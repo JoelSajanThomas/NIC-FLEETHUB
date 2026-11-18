@@ -1,0 +1,45 @@
+{
+  "name": "nic-fleethub-desktop",
+  "version": "1.0.0",
+  "description": "NIC FleetHub Desktop Application for Windows 10/11 & macOS",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win nsis:ia32,x64",
+    "build:mac": "electron-builder --mac dmg",
+    "build:all": "electron-builder -mw"
+  },
+  "author": "National Industries Company (K.S.C.C)",
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "kw.com.nic.fleethub.desktop",
+    "productName": "NIC FleetHub",
+    "copyright": "Copyright © 2026 National Industries Company (K.S.C.C)",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "../frontend/public/assets/icon-512x512.png",
+      "publisherName": "National Industries Company (K.S.C.C)"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NIC FleetHub"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "../frontend/public/assets/icon-512x512.png",
+      "category": "public.app-category.business",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}
