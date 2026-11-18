@@ -6,9 +6,10 @@
  * 1. Pre-cache application shell (HTML, CSS, JS, Branding).
  * 2. Strictly DO NOT cache sensitive business data or confidential API responses insecurely.
  * 3. Gracefully handle offline states and network interruptions.
+ * 4. Network-first for JavaScript, CSS, and HTML navigations so code updates load immediately.
  */
 
-const CACHE_NAME = "fleethub-shell-v2.0.0";
+const CACHE_NAME = "fleethub-shell-v2.2.0";
 
 // Static UI Assets (Application Shell)
 const STATIC_ASSETS = [
@@ -33,12 +34,12 @@ const STATIC_ASSETS = [
   "/assets/favicon-16x16.webp"
 ];
 
-// 1. Install Event: Cache core shell
+// 1. Install Event: Cache core shell and activate immediately
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("[Service Worker] Caching Application Shell");
+      console.log("[Service Worker] Caching Application Shell:", CACHE_NAME);
       return cache.addAll(STATIC_ASSETS).catch((err) => {
         console.warn("[Service Worker] Failed to pre-cache some assets:", err);
       });
@@ -46,7 +47,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// 2. Activate Event: Clean up outdated caches
+// 2. Activate Event: Clean up all outdated caches and take control
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -62,7 +63,7 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// 3. Fetch Event: Route static shell vs dynamic API
+// 3. Fetch Event: Route dynamic API vs code scripts vs static assets
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
@@ -97,38 +98,61 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // C. HTML Navigation Requests (e.g. visiting / or /app)
-  if (req.mode === "navigate") {
+  // C. Code Assets & Navigation (HTML, JS, CSS) -> Strict Network-First with Cache Fallback
+  // Guarantees UI bug fixes and improvements load immediately upon refresh without stale caching!
+  const isCodeOrNav = req.mode === "navigate" ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".html") ||
+    url.pathname === "/" ||
+    url.pathname === "/app";
+
+  if (isCodeOrNav) {
     event.respondWith(
-      fetch(req).catch(() => {
-        return caches.match(req).then((cached) => {
-          if (cached) return cached;
-          if (url.pathname.startsWith("/app")) {
-            return caches.match("/app.html");
+      fetch(req)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, responseToCache));
           }
-          return caches.match("/index.html");
-        });
-      })
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(req).then((cached) => {
+            if (cached) return cached;
+            if (url.pathname.startsWith("/app")) {
+              return caches.match("/app.html");
+            }
+            return caches.match("/index.html");
+          });
+        })
     );
     return;
   }
 
-  // D. Static Assets (CSS, JS, WebP images, Fonts, Manifest) -> Stale-While-Revalidate
+  // D. Static Media Assets (WebP images, Fonts, Manifest) -> Cache-First with revalidate
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
-      const fetchPromise = fetch(req)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === "basic") {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(req, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
+      if (cachedResponse) {
+        // Revalidate in background
+        fetch(req)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(req, responseToCache));
+            }
+          })
+          .catch(() => {});
+        return cachedResponse;
+      }
 
-      return cachedResponse || fetchPromise;
+      return fetch(req).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, responseToCache));
+        }
+        return networkResponse;
+      });
     })
   );
 });

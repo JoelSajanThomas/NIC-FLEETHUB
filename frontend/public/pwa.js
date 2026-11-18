@@ -8,21 +8,38 @@
 
   let deferredPrompt = null;
   let offlineBanner = null;
+  let refreshing = false;
 
-  // 1. Service Worker Registration
+  // 1. Service Worker Registration & Controller Change
   if ("serviceWorker" in navigator && (window.location.protocol === "http:" || window.location.protocol === "https:")) {
+    // Auto-reload once when a new service worker takes over control
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) {
+        refreshing = true;
+        console.log("[PWA] Service Worker controller updated. Refreshing page...");
+        window.location.reload();
+      }
+    });
+
     window.addEventListener("load", () => {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/" })
         .then((reg) => {
           console.log("[PWA] Service Worker registered successfully, scope:", reg.scope);
+          
           // Check for worker updates
           reg.onupdatefound = () => {
             const installing = reg.installing;
             if (installing) {
               installing.onstatechange = () => {
                 if (installing.state === "installed" && navigator.serviceWorker.controller) {
-                  showToast("NIC FleetHub update available. Refreshing...", 3000);
+                  showToast("NIC FleetHub updated to latest version. Reloading...", 2000);
+                  setTimeout(() => {
+                    if (!refreshing) {
+                      refreshing = true;
+                      window.location.reload();
+                    }
+                  }, 1000);
                 }
               };
             }

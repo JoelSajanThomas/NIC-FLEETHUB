@@ -1624,6 +1624,13 @@ V.reports = async () => {
 V.alerts = async () => {
   const [al, notifs] = await Promise.all([api("/alerts"), api("/notifications")]);
   const unreadNotifs = (notifs || []).filter(n => !n.read);
+  const compCount = (al.complaints_list || []).length;
+  const regCount = (al.insurance_expiring?.length || 0) + (al.reg_expiring?.length || 0);
+  const inspCount = (al.inspection_expiring || []).length;
+  const partsCount = (al.low_stock || []).length;
+  const woCount = (al.wo_inspections_list || []).length;
+  const purCount = (al.purchases_list || []).length;
+
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
       <div>
@@ -1634,11 +1641,23 @@ V.alerts = async () => {
         <button class="btn g sm" data-a="notifAll">Mark All Notifications Read</button>
       </div>
     </div>
+
+    <!-- Live Breakdown Pill Bar directly explaining the badge count -->
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin:1rem 0;padding:.85rem;background:var(--sf);border-radius:var(--r);border:1px solid var(--ln);align-items:center">
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${al.total > 0 ? 'c-crit' : 'c-done'}" style="font-weight:700">${al.total}</span> <b>Total Alert Items</b></div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${compCount > 0 ? 'c-crit' : 'c-done'}">${compCount}</span> Complaints</div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${regCount > 0 ? 'c-crit' : 'c-done'}">${regCount}</span> Traffic Reg & Ins</div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${inspCount > 0 ? 'c-crit' : 'c-done'}">${inspCount}</span> Fahs Fanni</div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${partsCount > 0 ? 'c-crit' : 'c-done'}">${partsCount}</span> Low Stock Parts</div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${woCount > 0 ? 'c-crit' : 'c-done'}">${woCount}</span> WO Inspections</div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem"><span class="chip ${purCount > 0 ? 'c-crit' : 'c-done'}">${purCount}</span> Pending Purchases</div>
+    </div>
+
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(22rem,1fr));gap:1.5rem;margin-top:1rem">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h4 style="margin:0">📢 Pending Complaints Awaiting Review (${(al.complaints_list || []).length})</h4>
-          ${(al.complaints_list || []).length ? `<button class="btn sm" data-a="nav" data-id="comp">Go to Complaints →</button>` : ""}
+          <h4 style="margin:0">📢 Pending Complaints Awaiting Review (${compCount})</h4>
+          ${compCount ? `<button class="btn sm" data-a="nav" data-id="comp">Go to Complaints →</button>` : ""}
         </div>
         ${(al.complaints_list || []).map(c => `
           <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
@@ -1656,7 +1675,7 @@ V.alerts = async () => {
       </div>
 
       <div class="card">
-        <h4 style="margin-bottom:1rem">📄 Expiring Kuwait Traffic Reg & Insurance (${(al.insurance_expiring?.length || 0) + (al.reg_expiring?.length || 0)})</h4>
+        <h4 style="margin-bottom:1rem">📄 Expiring Kuwait Traffic Reg & Insurance (${regCount})</h4>
         ${(al.insurance_expiring || []).map(a => `
           <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
             <div>
@@ -1679,7 +1698,7 @@ V.alerts = async () => {
       </div>
 
       <div class="card">
-        <h4 style="margin-bottom:1rem">🛠️ Expiring Technical Inspection / Fahs Fanni (${(al.inspection_expiring || []).length})</h4>
+        <h4 style="margin-bottom:1rem">🛠️ Expiring Technical Inspection / Fahs Fanni (${inspCount})</h4>
         ${(al.inspection_expiring || []).map(a => `
           <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
             <div>
@@ -1692,8 +1711,8 @@ V.alerts = async () => {
       </div>
 
       <div class="card">
-        <h4 style="margin-bottom:1rem">⚠️ Low Stock Spare Parts (${al.low_stock.length})</h4>
-        ${al.low_stock.map(p => `
+        <h4 style="margin-bottom:1rem">⚠️ Low Stock Spare Parts (${partsCount})</h4>
+        ${(al.low_stock || []).map(p => `
           <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
             <div>
               <b>${esc(p.stock_id)} · ${esc(p.name)}</b>
@@ -1704,42 +1723,38 @@ V.alerts = async () => {
         `).join("") || `<p class='mu'>${t("all_healthy")}</p>`}
       </div>
 
-      ${(al.wo_inspections_list || []).length ? `
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-            <h4 style="margin:0">🔍 Work Orders Pending Inspection (${al.wo_inspections_list.length})</h4>
-            <button class="btn sm" data-a="nav" data-id="wo">Go to Work Orders →</button>
-          </div>
-          ${al.wo_inspections_list.map(w => `
-            <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
-              <div style="flex:1;padding-right:.75rem">
-                <b>${esc(w.code)} · ${esc(w.asset_code)}</b>
-                <p style="margin:.2rem 0;font-size:.85rem">${esc(w.description.slice(0, 70))}</p>
-                <span class="chip c-assigned">${esc(w.status)}</span>
-              </div>
-              <button class="btn sm" data-a="nav" data-id="wo">Inspect →</button>
-            </div>
-          `).join("")}
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h4 style="margin:0">🔍 Work Orders Pending Inspection (${woCount})</h4>
+          ${woCount ? `<button class="btn sm" data-a="nav" data-id="wo">Go to Work Orders →</button>` : ""}
         </div>
-      ` : ""}
+        ${(al.wo_inspections_list || []).map(w => `
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
+            <div style="flex:1;padding-right:.75rem">
+              <b>${esc(w.code)} · ${esc(w.asset_code)}</b>
+              <p style="margin:.2rem 0;font-size:.85rem">${esc(w.description.slice(0, 70))}</p>
+              <span class="chip c-assigned">${esc(w.status)}</span>
+            </div>
+            <button class="btn sm" data-a="nav" data-id="wo">Inspect →</button>
+          </div>
+        `).join("") || `<p class='mu'>${t("all_healthy")}</p>`}
+      </div>
 
-      ${(al.purchases_list || []).length ? `
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-            <h4 style="margin:0">🛒 Purchases Awaiting Approval (${al.purchases_list.length})</h4>
-            <button class="btn sm" data-a="nav" data-id="pur">Go to Purchases →</button>
-          </div>
-          ${al.purchases_list.map(p => `
-            <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
-              <div style="flex:1;padding-right:.75rem">
-                <b>${esc(p.code)} · ${esc(p.part_name)}</b>
-                <p style="margin:.2rem 0;font-size:.85rem">Qty: ${p.qty} · Est: ${p.est_price || 0} ${esc(p.currency || 'KWD')}</p>
-              </div>
-              <button class="btn sm" data-a="nav" data-id="pur">Approve →</button>
-            </div>
-          `).join("")}
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h4 style="margin:0">🛒 Purchases Awaiting Approval (${purCount})</h4>
+          ${purCount ? `<button class="btn sm" data-a="nav" data-id="pur">Go to Purchases →</button>` : ""}
         </div>
-      ` : ""}
+        ${(al.purchases_list || []).map(p => `
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
+            <div style="flex:1;padding-right:.75rem">
+              <b>${esc(p.code)} · ${esc(p.part_name)}</b>
+              <p style="margin:.2rem 0;font-size:.85rem">Qty: ${p.qty} · Est: ${p.est_price || 0} ${esc(p.currency || 'KWD')}</p>
+            </div>
+            <button class="btn sm" data-a="nav" data-id="pur">Approve →</button>
+          </div>
+        `).join("") || `<p class='mu'>${t("all_healthy")}</p>`}
+      </div>
 
       <div class="card" style="grid-column:1/-1">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
