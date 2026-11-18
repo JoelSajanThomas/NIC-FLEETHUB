@@ -1,3 +1,4 @@
+const API_BASE = window.FLEETHUB_API_BASE || (document.querySelector('meta[name="fleethub-api-base"]')?.content) || "";
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)],rm=matchMedia("(prefers-reduced-motion:reduce)").matches;
 (function(){const w=innerWidth;function ag(){const s=16-16*((1920-innerWidth)/1920*100*.6666)/100;s>16?document.documentElement.style.fontSize=s+"px":document.documentElement.style.removeProperty("font-size")}ag();addEventListener("resize",ag)})();
@@ -73,7 +74,7 @@ if(rq){
       message:(rq.querySelector("[name=message]")?.value||"").trim()
     };
     try{
-      await fetch("/api/inquiries",{
+      await fetch(API_BASE + "/api/inquiries",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(payload)
@@ -104,7 +105,7 @@ const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").re
 
 async function syncHomepageData() {
   try {
-    const res = await fetch("/api/public/stats", { cache: "no-store" });
+    const res = await fetch(API_BASE + "/api/public/stats", { cache: "no-store" });
     if (!res.ok) return;
     const d = await res.json();
     LAST_HOMEPAGE_VERSION = d.version;
@@ -304,7 +305,7 @@ if (window.BroadcastChannel) {
 // Server-Sent Events (SSE) for server-driven real-time push
 if (window.EventSource) {
   try {
-    const es = new EventSource("/api/sync/events");
+    const es = new EventSource(API_BASE + "/api/sync/events");
     es.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
@@ -317,7 +318,7 @@ if (window.EventSource) {
 // Fallback short-polling (every 3 seconds) for guaranteed cross-browser freshness
 setInterval(async () => {
   try {
-    const res = await fetch("/api/sync/version", { cache: "no-store" });
+    const res = await fetch(API_BASE + "/api/sync/version", { cache: "no-store" });
     if (!res.ok) return;
     const v = await res.json();
     if (LAST_HOMEPAGE_VERSION !== null && v.version !== LAST_HOMEPAGE_VERSION) {

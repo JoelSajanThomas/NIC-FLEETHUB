@@ -9,15 +9,28 @@ def seed_defaults():
     con = connect()
     cur = con.cursor()
 
-    # 1. Default Admin User
-    admin_pw = os.environ.get("FLEETHUB_ADMIN_PASSWORD", "admin12345")
-    cur.execute("SELECT id FROM users WHERE username = 'admin'")
-    if not cur.fetchone():
-        hashed = generate_password_hash(admin_pw)
-        cur.execute(
-            "INSERT INTO users(username, name, role, pw, active, preferred_lang) VALUES(?,?,?,?,1,?)",
-            ("admin", "Administrator", "admin", hashed, "en")
-        )
+    # 1. Default Role Demo Users (One per role)
+    demo_users = [
+        ("admin", "Administrator", "admin", os.environ.get("FLEETHUB_ADMIN_PASSWORD", "admin12345"), "en"),
+        ("superadmin", "Super Administrator", "super_admin", "superadmin12345", "en"),
+        ("companyadmin", "Executive Director", "company_admin", "company12345", "en"),
+        ("transport", "Transport Controller", "transport", "transport12345", "en"),
+        ("mechanical", "Senior Mechanical Engineer", "mechanical", "mechanical12345", "en"),
+        ("workshop", "Central Workshop Supervisor", "workshop", "workshop12345", "en"),
+        ("mechanic", "Senior Plant Mechanic", "mechanic", "mechanic12345", "en"),
+        ("inventory", "Warehouse & Inventory Head", "inventory", "inventory12345", "en"),
+        ("procurement", "Purchasing & Sourcing Officer", "procurement", "procurement12345", "en"),
+        ("driver", "Rashed Al-Mutairi", "driver", "driver12345", "ar"),
+        ("management", "Operations Director", "management", "management12345", "en")
+    ]
+    for u_name, name, role, pw, lang in demo_users:
+        cur.execute("SELECT id FROM users WHERE username = ?", (u_name,))
+        if not cur.fetchone():
+            hashed = generate_password_hash(pw)
+            cur.execute(
+                "INSERT INTO users(username, name, role, pw, active, preferred_lang) VALUES(?,?,?,?,1,?)",
+                (u_name, name, role, hashed, lang)
+            )
 
     # 2. Kuwait Worksites
     sites = [

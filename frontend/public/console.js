@@ -1,6 +1,7 @@
 (()=>{
 const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
 const R = $("#root");
+const API_BASE = window.FLEETHUB_API_BASE || (document.querySelector('meta[name="fleethub-api-base"]')?.content) || "";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const rs = (n, cur = "KWD") => {
   const num = Number(n || 0);
@@ -376,8 +377,7 @@ const toast = msg => {
 async function api(p, o) {
   let cleanPath = p.startsWith("/api/") ? p.substring(4) : (p.startsWith("/api") ? p.substring(4) : p);
   if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-  const baseUrl = window.FLEETHUB_API_BASE || "";
-  const r = await fetch(baseUrl + "/api" + cleanPath, { credentials: "include", ...o });
+  const r = await fetch(API_BASE + "/api" + cleanPath, { credentials: "include", ...o });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     if (r.status === 401 && ME) { ME = null; boot(); }
@@ -3017,7 +3017,7 @@ if (SYNC_BUS) {
 
 if (window.EventSource) {
   try {
-    const es = new EventSource("/api/sync/events");
+    const es = new EventSource(API_BASE + "/api/sync/events");
     es.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);

@@ -186,9 +186,10 @@ def load_demo_dataset(c):
     """, (a_ids[0], sid_shuwaikh, sid_mutlaa, now()))
 
     # 12. Sample Files
+    webp_dummy = b"RIFF\x1a\x00\x00\x00WEBPVP8 \x0e\x00\x00\x00\xb0\x01\x00\x9d\x01*\x01\x00\x01\x00\x00/ \xa4\x00\x03p\x00\xfe\xfb\xfd\x00"
     sample_files = [
-        ("demo_cat_inspection.png", b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82", "CAT 349D Technical Inspection Certificate (Kuwait).png", "Inspection", a_ids[0], None),
-        ("demo_tipper_invoice.png", b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82", "Al-Mulla Knorr-Bremse Commercial Invoice.png", "Invoice", a_ids[1], w2),
+        ("demo_cat_inspection.webp", webp_dummy, "CAT 349D Technical Inspection Certificate (Kuwait).webp", "Inspection", a_ids[0], None),
+        ("demo_tipper_invoice.webp", webp_dummy, "Al-Mulla Knorr-Bremse Commercial Invoice.webp", "Invoice", a_ids[1], w2),
         ("demo_voice_breakdown.wav", b"RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00", "Driver Voice Breakdown Report (Arabic).wav", "Voice Note", a_ids[0], w1)
     ]
     for stored_fn, file_bytes, orig_fn, kind, aid, woid in sample_files:
