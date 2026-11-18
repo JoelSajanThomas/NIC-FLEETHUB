@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "framework": null,
+  "buildCommand": "node -e \"console.log('NIC FleetHub Static CDN Build')\"",
+  "outputDirectory": "frontend/public",
   "cleanUrls": true,
   "headers": [
     {
@@ -37,23 +38,15 @@
     },
     {
       "source": "/app",
-      "destination": "/frontend/public/app.html"
+      "destination": "/app.html"
     },
     {
       "source": "/app/(.*)",
-      "destination": "/frontend/public/app.html"
+      "destination": "/app.html"
     },
     {
       "source": "/",
-      "destination": "/frontend/public/index.html"
-    },
-    {
-      "source": "/assets/(.*)",
-      "destination": "/frontend/public/assets/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/public/$1"
+      "destination": "/index.html"
     }
   ]
 }
