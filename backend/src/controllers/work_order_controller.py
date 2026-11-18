@@ -43,6 +43,7 @@ def wo_new():
         if cid:
             cm = c.execute("SELECT * FROM complaints WHERE id=?", (cid,)).fetchone()
             if not cm: raise Bad("Complaint not found", 404)
+            cm = dict(cm)
             if cm["status"] != "Approved": raise Bad("Only approved complaints can become work orders")
             aid, pri, desc = cm["asset_id"], cm["priority"], desc or cm["description"]
             voice_id = voice_id or cm["voice_doc_id"]

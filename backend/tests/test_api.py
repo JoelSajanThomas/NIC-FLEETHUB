@@ -166,6 +166,7 @@ class FleetHubBackendTestCase(unittest.TestCase):
         file_res = self.client.get(f"/api/files/{doc_id}")
         self.assertEqual(file_res.status_code, 200)
         self.assertGreater(len(file_res.data), 0)
+        file_res.close()
 
     def test_complaint_and_work_order_with_voice_integration(self):
         """Module 5 & 4: Link voice audio and AI description directly to business records."""
