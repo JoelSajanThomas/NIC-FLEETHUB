@@ -52,3 +52,10 @@ local.properties
 # Test & run outputs
 backend/data/*_results.json
 
+# Local documents & temporary files
+*.docx
+~$*
+Joel_Sajan_Thomas_*
+build_doc/
+
+
