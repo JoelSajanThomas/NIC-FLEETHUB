@@ -13,8 +13,8 @@ def api_sync_version():
 
 @sync_bp.get("/api/sync/events")
 def api_sync_events():
-    """Server-Sent Events endpoint streaming live database commit notifications."""
-    return create_sse_stream()
+    """Lightweight sync status endpoint replacing blocking SSE for WSGI thread pool safety."""
+    return jsonify(version=get_sync_version(), mode="poll", status="ok")
 
 @sync_bp.get("/api/public/stats")
 def api_public_stats():

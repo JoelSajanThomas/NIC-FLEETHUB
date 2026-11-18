@@ -311,21 +311,9 @@ if (window.BroadcastChannel) {
   bc.onmessage = () => syncHomepageData();
 }
 
-// Server-Sent Events (SSE) for server-driven real-time push
-if (window.EventSource) {
-  try {
-    const es = new EventSource(API_BASE + "/api/sync/events");
-    es.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type !== "init") syncHomepageData();
-      } catch (_) {}
-    };
-  } catch (_) {}
-}
-
-// Fallback short-polling (every 3 seconds) for guaranteed cross-browser freshness
-setInterval(async () => {
+// Smart visibility-aware polling (every 10 seconds when tab is active)
+async function checkHomepageSync() {
+  if (document.visibilityState === "hidden") return;
   try {
     const res = await fetch(API_BASE + "/api/sync/version", { cache: "no-store" });
     if (!res.ok) return;
@@ -334,4 +322,10 @@ setInterval(async () => {
       syncHomepageData();
     }
   } catch (_) {}
-}, 3000);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkHomepageSync();
+});
+
+setInterval(checkHomepageSync, 10000);

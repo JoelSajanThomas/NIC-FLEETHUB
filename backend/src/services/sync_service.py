@@ -31,33 +31,15 @@ def notify_sync(event_type="update", details=None):
                 SYNC_CLIENTS.remove(d)
 
 def create_sse_stream():
-    """Create a Server-Sent Events stream generator for connected clients."""
-    client_q = queue.Queue(maxsize=100)
-    with SYNC_CLIENTS_LOCK:
-        SYNC_CLIENTS.append(client_q)
-    
+    """Create a lightweight non-blocking SSE response that sends current state and terminates immediately."""
     def event_stream():
-        try:
-            # Send initial version packet
-            yield f"data: {json.dumps({'version': DB_SYNC_VERSION, 'type': 'connect'})}\n\n"
-            while True:
-                try:
-                    msg = client_q.get(timeout=20.0)
-                    yield f"data: {msg}\n\n"
-                except queue.Empty:
-                    # Keep-alive heartbeat
-                    yield f": heartbeat {time.time()}\n\n"
-        finally:
-            with SYNC_CLIENTS_LOCK:
-                if client_q in SYNC_CLIENTS:
-                    SYNC_CLIENTS.remove(client_q)
-
+        yield f"data: {json.dumps({'version': DB_SYNC_VERSION, 'type': 'connect'})}\n\n"
     return Response(
         event_stream(),
         mimetype="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-transform",
-            "Connection": "keep-alive",
+            "Connection": "close",
             "X-Accel-Buffering": "no"
         }
     )

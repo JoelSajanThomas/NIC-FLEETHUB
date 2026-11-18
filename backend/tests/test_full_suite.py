@@ -77,6 +77,14 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
         res = self.client.post("/api/logout")
         self.assertEqual(res.status_code, 200)
 
+    def test_auth_token_query_parameter(self):
+        """TC-AUTH-06: Protected endpoint access using ?token=<bearer_token> query parameter."""
+        fresh_client = self.app.test_client()
+        res_no_tok = fresh_client.get("/api/reports/export?type=assets&format=json")
+        self.assertEqual(res_no_tok.status_code, 401)
+        res_with_tok = fresh_client.get(f"/api/reports/export?type=assets&format=json&token={self.admin_token}")
+        self.assertEqual(res_with_tok.status_code, 200)
+
     # =========================================================================
     # 2. ASSET MANAGEMENT (CRUD & KUWAIT COMPLIANCE)
     # =========================================================================

@@ -34,11 +34,18 @@ def verify_token(token):
         return None
 
 def check_bearer_auth():
-    """Extract session data from Authorization: Bearer token, taking precedence over session cookies."""
+    """Extract session data from Authorization: Bearer token or token query param, taking precedence over session cookies."""
     auth_hdr = request.headers.get("Authorization", "")
+    token = None
     if auth_hdr.startswith("Bearer "):
-        raw = auth_hdr[7:].strip()
-        t_data = verify_token(raw)
+        token = auth_hdr[7:].strip()
+    elif request.args.get("token"):
+        token = request.args.get("token").strip()
+    elif request.args.get("auth"):
+        token = request.args.get("auth").strip()
+
+    if token:
+        t_data = verify_token(token)
         if t_data and isinstance(t_data, dict) and "uid" in t_data:
             session.clear()
             session.update(t_data)

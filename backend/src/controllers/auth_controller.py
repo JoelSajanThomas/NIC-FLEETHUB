@@ -32,7 +32,25 @@ def login():
         lang=r.get("preferred_lang") or "en"
     )
     audit("login", "user", r["id"])
-    return me()
+    role = r["role"]
+    s = ROLES.get(role, set())
+    user_lang = r.get("preferred_lang") or "en"
+    token = issue_token({
+        "uid": r["id"],
+        "username": r["username"],
+        "name": r["name"],
+        "role": role,
+        "lang": user_lang
+    })
+    return jsonify(
+        id=r["id"],
+        username=r["username"],
+        name=r["name"],
+        role=role,
+        perms=["*"] if s == "*" else sorted(s),
+        lang=user_lang,
+        token=token
+    )
 
 @auth_bp.post("/api/logout")
 def logout():

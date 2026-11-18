@@ -379,14 +379,16 @@ async function api(p, o) {
   if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
   const token = localStorage.getItem("fleethub_token");
   const headers = { ...(o?.headers || {}) };
-  if (token) headers["Authorization"] = "Bearer " + token;
+  if (token && cleanPath !== "/login") headers["Authorization"] = "Bearer " + token;
   const r = await fetch(API_BASE + "/api" + cleanPath, { credentials: "include", ...o, headers });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
-    if (r.status === 401 && ME) {
+    if (r.status === 401) {
       localStorage.removeItem("fleethub_token");
-      ME = null;
-      boot();
+      if (ME) {
+        ME = null;
+        boot();
+      }
     }
     throw Error(j.error || r.statusText || "Request failed");
   }
@@ -1028,10 +1030,20 @@ const tbl = (cols, data, act) => data.length ? `
   </div>
 ` : `<p class="mu" style="padding:1.5rem 0">No records found.</p>`;
 
+const fileUrl = (id, extra = "") => {
+  if (!id) return "";
+  const token = localStorage.getItem("fleethub_token");
+  const base = (window.FLEETHUB_API_BASE || "") + "/api/files/" + id;
+  const params = [];
+  if (token) params.push("token=" + encodeURIComponent(token));
+  if (extra) params.push(extra.startsWith("&") || extra.startsWith("?") ? extra.substring(1) : extra);
+  return base + (params.length ? "?" + params.join("&") : "");
+};
+
 const B = (a, id, l, x = "") => `<button class="btn g sm" data-a="${a}" data-id="${id}" ${x}>${l}</button>`;
-const bill = id => id ? `<a href="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}" target="_blank" rel="noopener" class="chip c-verified">View Bill</a>` : `<span class="mu">-</span>`;
-const docLink = id => id ? `<a href="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}" target="_blank" rel="noopener" class="chip c-verified">View Doc</a>` : `<span class="mu">-</span>`;
-const audioPlayer = id => id ? `<div style="display:inline-flex;align-items:center;gap:.3rem"><audio src="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}" controls style="height:1.75rem;max-width:11rem;vertical-align:middle"></audio><a href="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}?dl=1" title="Download audio recording" download class="chip" style="font-size:.7rem;padding:.15rem .35rem;text-decoration:none">💾</a></div>` : `<span class="mu">-</span>`;
+const bill = id => id ? `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="chip c-verified">View Bill</a>` : `<span class="mu">-</span>`;
+const docLink = id => id ? `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="chip c-verified">View Doc</a>` : `<span class="mu">-</span>`;
+const audioPlayer = id => id ? `<div style="display:inline-flex;align-items:center;gap:.3rem"><audio src="${fileUrl(id)}" controls style="height:1.75rem;max-width:11rem;vertical-align:middle"></audio><a href="${fileUrl(id, "dl=1")}" title="Download audio recording" download class="chip" style="font-size:.7rem;padding:.15rem .35rem;text-decoration:none">💾</a></div>` : `<span class="mu">-</span>`;
 const opts = (a, v, l, none) => (none ? [["", none]] : []).concat(a.map(r => [r[v], l(r)]));
 const aOpts = async (mine) => opts(await api(mine ? "/my-assets" : "/assets"), "id", a => `${a.code} · ${a.name}${a.reg_no ? " · " + a.reg_no : ""}`);
 const woOpts = async none => opts(await api("/work-orders?open=1"), "id", w => `${w.code} · ${w.asset_code} · ${w.description.slice(0, 40)}`, none);
@@ -1337,9 +1349,9 @@ V.asset = async id => {
             <small class="mu">${esc(x.at)} · By ${esc(x.by)}</small>
             <div style="margin-top:.25rem">
               ${x.mime && x.mime.startsWith("audio/") ? `
-                <audio src="/api/files/${x.id}" controls style="width:100%;height:2rem"></audio>
+                <audio src="${fileUrl(x.id)}" controls style="width:100%;height:2rem"></audio>
               ` : `
-                <a href="/api/files/${x.id}" target="_blank" rel="noopener" class="btn g sm" style="display:inline-block">View / Download</a>
+                <a href="${fileUrl(x.id)}" target="_blank" rel="noopener" class="btn g sm" style="display:inline-block">View / Download</a>
               `}
             </div>
           </div>
@@ -1607,7 +1619,7 @@ V.reports = async () => {
         </select>
       </label>
       <button class="btn sm" id="btnGenRep">Generate View</button>
-      <a id="btnCsvRep" href="/api/reports/export?type=${rtype}&format=csv" class="btn g sm" download style="display:inline-block">Download CSV (Excel)</a>
+      <a id="btnCsvRep" href="/api/reports/export?type=${rtype}&format=csv${localStorage.getItem("fleethub_token") ? "&token=" + encodeURIComponent(localStorage.getItem("fleethub_token")) : ""}" class="btn g sm" download style="display:inline-block">Download CSV (Excel)</a>
       <button class="btn g sm" onclick="window.print()">Print Report</button>
     </div>
 
@@ -1959,7 +1971,8 @@ async function go(v, a, back) {
     if (btnGen) {
       btnGen.onclick = () => go("reports");
       $("#repType").onchange = () => {
-        $("#btnCsvRep").href = `/api/reports/export?type=${$("#repType").value}&format=csv`;
+        const tok = localStorage.getItem("fleethub_token");
+        $("#btnCsvRep").href = `/api/reports/export?type=${$("#repType").value}&format=csv` + (tok ? `&token=${encodeURIComponent(tok)}` : "");
       };
     }
     updateAlertBadge();
@@ -2301,8 +2314,8 @@ ACT.purDocs = async d => {
               </div>
             </div>
             <div style="display:flex;gap:.35rem">
-              <a href="/api/files/${doc.id}" target="_blank" class="btn sm" style="text-decoration:none">👁️ View</a>
-              <a href="/api/files/${doc.id}" download="${esc(doc.filename)}" class="btn sm g" style="text-decoration:none">⬇️ Download</a>
+              <a href="${fileUrl(doc.id)}" target="_blank" class="btn sm" style="text-decoration:none">👁️ View</a>
+              <a href="${fileUrl(doc.id, "dl=1")}" download="${esc(doc.filename)}" class="btn sm g" style="text-decoration:none">⬇️ Download</a>
               <button type="button" class="btn sm er" data-doc-id="${doc.id}">🗑️</button>
             </div>
           </div>
@@ -3026,21 +3039,9 @@ if (SYNC_BUS) {
   };
 }
 
-if (window.EventSource) {
-  try {
-    const es = new EventSource(API_BASE + "/api/sync/events");
-    es.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type !== "init" && msg.type !== "connect" && ME) refresh();
-      } catch (_) {}
-    };
-  } catch (_) {}
-}
-
 let lastConsoleSyncVersion = null;
-setInterval(async () => {
-  if (!ME) return;
+async function pollSyncVersion() {
+  if (!ME || document.visibilityState === "hidden") return;
   try {
     const res = await api("/sync/version");
     if (lastConsoleSyncVersion !== null && res.version !== lastConsoleSyncVersion) {
@@ -3050,5 +3051,11 @@ setInterval(async () => {
       lastConsoleSyncVersion = res.version;
     }
   } catch (_) {}
-}, 3000);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") pollSyncVersion();
+});
+
+setInterval(pollSyncVersion, 8000);
 })();
