@@ -12,4 +12,4 @@ services:
       - key: PRODUCTION
         value: "true"
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://nic-fleethub.vercel.app,http://localhost:3000"
+        value: "https://nic-fleethub-frontend.vercel.app,https://nic-fleethub.vercel.app,http://localhost:3000"

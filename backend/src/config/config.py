@@ -33,7 +33,7 @@ DEBUG = os.environ.get("DEBUG", "0").lower() in ("1", "true", "yes")
 CORS_ORIGINS = [
     origin.strip() for origin in os.environ.get(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5000,http://127.0.0.1:5000,http://localhost:5173,http://127.0.0.1:5173"
+        "https://nic-fleethub-frontend.vercel.app,https://nic-fleethub.vercel.app,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5000,http://127.0.0.1:5000,http://localhost:5173,http://127.0.0.1:5173"
     ).split(",") if origin.strip()
 ]
 
