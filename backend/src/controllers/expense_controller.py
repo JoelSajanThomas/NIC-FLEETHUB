@@ -4,6 +4,7 @@ from ..database.connection import rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
 from ..services.currency_service import convert_to_kwd
+from ..services.sync_service import notify_sync
 from .asset_controller import save_file
 from ..utils.helpers import P, now
 
@@ -49,6 +50,7 @@ def exp_new():
         save_file(c, f, asset_id=aid, wo_id=wid, expense_id=cur.lastrowid, kind="Expense bill")
         audit("create", "expense", cur.lastrowid, f"{k} {amt_kwd} KWD ({amt} {currency})")
 
+    notify_sync("expense_create", {"expense_id": cur.lastrowid})
     return jsonify(ok=1)
 
 @expense_bp.get("/api/expenses")

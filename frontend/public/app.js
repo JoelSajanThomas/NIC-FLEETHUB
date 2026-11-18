@@ -119,6 +119,9 @@ async function syncHomepageData() {
     const elSites = $("#liveSites");
     if (elSites) elSites.textContent = String(d.sites.total_sites);
 
+    const elLabour = $("#liveLabour");
+    if (elLabour) elLabour.textContent = "0.000";
+
     // 2. Work Orders by Stage
     const elStages = $("#liveStages");
     if (elStages && d.operations.stages) {

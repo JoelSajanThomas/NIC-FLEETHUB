@@ -5,6 +5,7 @@ from ..config import config
 from ..database.connection import tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
+from ..services.sync_service import notify_sync
 from ..services.voice_translation_service import (
     translate_text,
     generate_professional_description,
@@ -123,6 +124,8 @@ def api_voice_process():
                 ))
                 doc_id = c.lastrowid
                 audit("upload", "document", doc_id, f"Voice audio {orig_filename}")
+            if doc_id:
+                notify_sync("voice_upload", {"doc_id": doc_id})
         except Exception as e:
             print(f"[Voice Controller] Database document insert warning: {e}")
 

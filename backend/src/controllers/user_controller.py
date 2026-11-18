@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash
 from ..database.connection import one, rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
+from ..services.sync_service import notify_sync
 from ..utils.helpers import P
 
 user_bp = Blueprint("users", __name__)
@@ -29,6 +30,7 @@ def create_user():
                     (u, n, r, generate_password_hash(pw), lang))
         uid = cur.lastrowid
         audit("create", "user", uid, f"{u} ({r})")
+    notify_sync("user_create", {"user_id": uid, "username": u})
     return jsonify(id=uid, username=u, name=n, role=r, preferred_lang=lang)
 
 @user_bp.put("/api/users/<int:i>")
@@ -50,6 +52,7 @@ def edit_user(i):
         else:
             cur.execute("UPDATE users SET name=?, role=?, preferred_lang=? WHERE id=?", (n, r, lang, i))
         audit("edit", "user", i, f"name={n}, role={r}")
+    notify_sync("user_edit", {"user_id": i})
     return jsonify(ok=1)
 
 @user_bp.post("/api/users/<int:i>/toggle")
@@ -62,4 +65,5 @@ def toggle_user(i):
     with tx() as cur:
         cur.execute("UPDATE users SET active=? WHERE id=?", (new_state, i))
         audit("toggle", "user", i, f"active={new_state}")
+    notify_sync("user_toggle", {"user_id": i, "active": new_state})
     return jsonify(ok=1, active=new_state)

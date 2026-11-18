@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify
 from ..database.connection import one, rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
+from ..services.sync_service import notify_sync
 from ..utils.helpers import P, now
 
 supplier_bp = Blueprint("suppliers", __name__)
@@ -35,6 +36,7 @@ def sup_new():
                     (code, n, cp, ph, em, ad, tx_no, cats, notes, now()))
         sid = cur.lastrowid
         audit("create", "supplier", sid, f"{code} {n}")
+    notify_sync("supplier_create", {"supplier_id": sid, "code": code})
     return jsonify(id=sid, code=code, name=n)
 
 @supplier_bp.get("/api/suppliers/<int:i>")
@@ -64,6 +66,7 @@ def sup_edit(i):
                        WHERE id=?""",
                     (n, cp, ph, em, ad, tx_no, cats, notes, i))
         audit("edit", "supplier", i, n)
+    notify_sync("supplier_edit", {"supplier_id": i, "name": n})
     return jsonify(ok=1)
 
 @supplier_bp.post("/api/suppliers/<int:i>/toggle")
@@ -76,4 +79,5 @@ def sup_toggle(i):
     with tx() as cur:
         cur.execute("UPDATE suppliers SET active=? WHERE id=?", (new_state, i))
         audit("toggle", "supplier", i, f"active={new_state}")
+    notify_sync("supplier_toggle", {"supplier_id": i, "active": new_state})
     return jsonify(ok=1, active=new_state)

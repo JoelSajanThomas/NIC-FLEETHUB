@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request, session
 from ..database.connection import rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
+from ..services.sync_service import notify_sync
 from .asset_controller import save_file
 from ..utils.helpers import P, now, make_csv_response, parse_csv_file
 
@@ -54,6 +55,7 @@ def hist_new():
         if f and f.filename:
             save_file(c, f, asset_id=aid, historical_id=cur.lastrowid, kind="Historical document")
         audit("digitize", "historical_record", code, title[:80])
+    notify_sync("historical_create", {"historical_id": cur.lastrowid, "code": code})
     return jsonify(id=cur.lastrowid, code=code)
 
 @historical_bp.get("/api/historical/template")
@@ -96,4 +98,6 @@ def hist_import():
             c.execute("UPDATE historical_records SET code=? WHERE id=?", (code, cur.lastrowid))
             imported += 1
         audit("import", "historical_records", imported, f"{len(errors)} errors" if errors else "all ok")
+    if imported > 0:
+        notify_sync("historical_import", {"count": imported})
     return jsonify(imported=imported, errors=errors)

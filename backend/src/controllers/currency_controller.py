@@ -4,6 +4,7 @@ from ..database.connection import rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
 from ..services.currency_service import fetch_live_rates
+from ..services.sync_service import notify_sync
 from ..utils.helpers import P, now
 
 currency_bp = Blueprint("currency", __name__)
@@ -32,10 +33,12 @@ def api_currency_set_rate():
                      ON CONFLICT(currency) DO UPDATE SET rate_to_kwd=excluded.rate_to_kwd, rate_from_kwd=excluded.rate_from_kwd, is_manual=1, updated_at=excluded.updated_at""",
                   (cur, round(rate, 6), r_from, now()))
         audit("update", "currency_rate", cur, f"Manual rate {rate} KWD")
+    notify_sync("currency_rate", {"currency": cur})
     return jsonify(ok=1, currency=cur, rate_to_kwd=rate, rate_from_kwd=r_from)
 
 @currency_bp.post("/api/currency/sync")
 @need("settings")
 def api_currency_sync():
     fetch_live_rates()
+    notify_sync("currency_sync")
     return jsonify(ok=1, rates=rows("SELECT currency, rate_to_kwd, rate_from_kwd, is_manual, updated_at FROM exchange_rates ORDER BY currency"))

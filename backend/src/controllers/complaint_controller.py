@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request, session
 from ..database.connection import one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need, can
+from ..services.sync_service import notify_sync
 from ..services.voice_translation_service import translate_text, generate_professional_description
 from .asset_controller import save_file
 from ..utils.helpers import P, now
@@ -51,6 +52,7 @@ def comp_new():
             c.execute("UPDATE complaints SET voice_doc_id=? WHERE id=?", (v_id, cur.lastrowid))
         audit("create", "complaint", code, desc[:80])
         notify("transport", f"New complaint {code}", f"{desc[:60]} on {a['name']}", kind="complaint", link="#comp")
+    notify_sync("complaint_create", {"complaint_id": cur.lastrowid, "code": code})
     return jsonify(id=cur.lastrowid, code=code)
 
 @complaint_bp.get("/api/complaints")
@@ -90,4 +92,5 @@ def comp_decide(i):
             notify("mechanical", f"Approved complaint {r['code']}", f"Ready for work order: {r['description'][:60]}", kind="complaint", link="#comp")
         else:
             notify(None, f"Complaint {r['code']} {st}", note or st, kind="complaint", link="#comp")
+    notify_sync("complaint_decide", {"complaint_id": i, "status": st})
     return jsonify(ok=1)

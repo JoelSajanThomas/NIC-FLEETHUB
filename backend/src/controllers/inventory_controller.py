@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request, session
 from ..database.connection import one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
+from ..services.sync_service import notify_sync
 from ..utils.helpers import P, now
 
 inventory_bp = Blueprint("inventory", __name__)
@@ -61,6 +62,7 @@ def part_new():
         sid = sid or f"STK-{cur.lastrowid:05d}"
         c.execute("UPDATE parts SET stock_id=? WHERE id=?", (sid, cur.lastrowid))
         audit("create", "part", sid, name)
+    notify_sync("part_create", {"part_id": cur.lastrowid, "stock_id": sid})
     return jsonify(stock_id=sid, id=cur.lastrowid)
 
 @inventory_bp.post("/api/parts/<int:pid>/stock")
@@ -74,6 +76,7 @@ def part_stock(pid):
     with tx() as c:
         stock_move(c, pid, k, q, cost=float(p["unit_cost"]) if p.get("unit_cost") else None, note=p.get("note"))
         audit("stock " + k, "part", pid, str(q))
+    notify_sync("part_stock", {"part_id": pid, "kind": k, "qty": q})
     return jsonify(ok=1)
 
 @inventory_bp.post("/api/parts/<int:pid>/issue")
@@ -93,6 +96,7 @@ def part_issue(pid):
             (w["asset_id"], w["id"], "spare_part", round(q * pt["unit_cost"], 3), f"tx:{tid}", f"{q:g} x {pt['name']} ({pt['stock_id']})", session["name"], now())
         )
         audit("issue", "part", pt["stock_id"], f"{q:g} to {w['code']}")
+    notify_sync("part_issue", {"part_id": pid, "wo_id": w["id"]})
     return jsonify(ok=1)
 
 @inventory_bp.post("/api/parts/<int:pid>/return")
@@ -113,6 +117,7 @@ def part_return(pid):
             (w["asset_id"], w["id"], "spare_part", -round(q * uc, 3), f"tx:{tid}", f"Returned {q:g} x {pt['name']}", session["name"], now())
         )
         audit("return", "part", pt["stock_id"], f"{q:g} from {w['code']}")
+    notify_sync("part_return", {"part_id": pid, "wo_id": w["id"]})
     return jsonify(ok=1)
 
 @inventory_bp.get("/api/parts/<int:pid>/history")

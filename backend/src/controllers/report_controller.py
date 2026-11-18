@@ -6,6 +6,7 @@ from ..config import config
 from ..database.connection import get_db, rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need, can
+from ..services.sync_service import notify_sync
 from ..utils.helpers import make_csv_response
 
 report_bp = Blueprint("reports", __name__)
@@ -136,6 +137,7 @@ def notif_list():
 def notif_read(i):
     with tx() as c:
         c.execute("UPDATE notifications SET read=1 WHERE id=?", (i,))
+    notify_sync("notification_read", {"id": i})
     return jsonify(ok=1)
 
 @report_bp.post("/api/notifications/read-all")
@@ -145,6 +147,7 @@ def notif_read_all():
     uid = session["uid"]
     with tx() as c:
         c.execute("UPDATE notifications SET read=1 WHERE user_id=? OR target_role=? OR target_role IS NULL", (uid, r))
+    notify_sync("notification_read_all")
     return jsonify(ok=1)
 
 @report_bp.get("/api/audit")

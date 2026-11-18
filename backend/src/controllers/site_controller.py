@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify
 from ..database.connection import one, rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
+from ..services.sync_service import notify_sync
 from ..utils.helpers import P
 
 site_bp = Blueprint("sites", __name__)
@@ -24,6 +25,7 @@ def cat_new():
         cur.execute("INSERT INTO categories(kind, name) VALUES(?,?)", (k, n))
         cid = cur.lastrowid
         audit("create", "category", cid, f"{k}:{n}")
+    notify_sync("category_create", {"category_id": cid, "kind": k, "name": n})
     return jsonify(id=cid, kind=k, name=n)
 
 @site_bp.post("/api/worksites")
@@ -44,6 +46,7 @@ def ws_new():
                     (n, st, gov, paci, cp, cphone))
         wid = cur.lastrowid
         audit("create", "worksite", wid, f"{n} ({gov})")
+    notify_sync("worksite_create", {"worksite_id": wid, "name": n})
     return jsonify(id=wid, name=n, site_type=st, governorate=gov, paci_no=paci, contact_person=cp, contact_phone=cphone, active=1)
 
 @site_bp.get("/api/worksites")
@@ -76,4 +79,5 @@ def ws_edit(i):
                        WHERE id=?""",
                     (n, st, gov, paci, cp, cphone, i))
         audit("edit", "worksite", i, f"{n} ({gov})")
+    notify_sync("worksite_edit", {"worksite_id": i, "name": n})
     return jsonify(ok=1)

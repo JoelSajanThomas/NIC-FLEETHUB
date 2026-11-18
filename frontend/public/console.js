@@ -1863,6 +1863,10 @@ async function go(v, a, back) {
 }
 
 const refresh = () => {
+  const active = document.activeElement;
+  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT") && $("#main")?.contains(active)) {
+    return;
+  }
   const h = HIST.pop() || ["dash"];
   return go(h[0], h[1]);
 };
@@ -2918,7 +2922,7 @@ if (window.EventSource) {
     es.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
-        if (msg.type !== "init" && ME) refresh();
+        if (msg.type !== "init" && msg.type !== "connect" && ME) refresh();
       } catch (_) {}
     };
   } catch (_) {}

@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request, session
 from ..database.connection import one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need, can
+from ..services.sync_service import notify_sync
 from ..services.voice_translation_service import translate_text, generate_professional_description
 from .asset_controller import save_file
 from ..utils.helpers import P, now
@@ -71,6 +72,7 @@ def wo_new():
             c.execute("UPDATE documents SET wo_id=?, ai_description=? WHERE id=?", (cur.lastrowid, ai_desc, voice_id))
         audit("create", "work order", code, desc[:80])
         notify("workshop", f"New work order {code}", f"{desc[:60]} ({pri})", kind="wo", link="#wo")
+    notify_sync("work_order_create", {"wo_id": cur.lastrowid, "code": code})
     return jsonify(id=cur.lastrowid, code=code)
 
 @work_order_bp.get("/api/work-orders")
@@ -125,6 +127,7 @@ def wo_status(i):
             notify("mechanical", f"{w['code']} pending inspection", f"Work completed by {session['name']}", kind="wo", link="#wo")
         elif st == "Waiting for Spare Parts":
             notify("inventory", f"{w['code']} waiting for parts", f"Asset {w['code']}", kind="wo", link="#wo")
+    notify_sync("work_order_status", {"wo_id": i, "status": st, "asset_id": w["asset_id"]})
     return jsonify(ok=1)
 
 @work_order_bp.post("/api/work-orders/<int:i>/documents")
@@ -140,4 +143,5 @@ def wo_doc_up(i):
         if kind == "Voice recording":
             c.execute("UPDATE work_orders SET voice_doc_id=? WHERE id=?", (d, i))
         audit("upload", "work order", i, f.filename)
+    notify_sync("work_order_document", {"wo_id": i, "doc_id": d})
     return jsonify(id=d)

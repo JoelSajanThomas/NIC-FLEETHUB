@@ -1,5 +1,5 @@
 """Basic API and database unit tests for NIC FleetHub Backend."""
-import unittest, json
+import unittest, json, os
 from src.app import create_app
 
 class FleetHubBackendTestCase(unittest.TestCase):
@@ -312,6 +312,43 @@ class FleetHubBackendTestCase(unittest.TestCase):
         self.assertEqual(data["detected_lang"], "en")
         self.assertIn("invoice_no", data["fields"])
         self.assertEqual(data["fields"]["invoice_no"]["value"], "GHM-1200")
+
+    def test_live_data_synchronization_triggers(self):
+        """Test that data mutations trigger sync version increments and update public stats."""
+        from src.services.sync_service import get_sync_version
+        
+        v_before = get_sync_version()
+        login_res = self.client.post("/api/login", json={"username": "admin", "password": "admin12345"})
+        self.assertEqual(login_res.status_code, 200)
+        
+        # 1. Register a new asset
+        res = self.client.post("/api/assets", json={
+            "name": "Sync Test Bulldozer CAT D8T",
+            "category": "Bulldozer",
+            "status": "Active"
+        })
+        self.assertEqual(res.status_code, 200)
+        v_after_asset = get_sync_version()
+        self.assertGreater(v_after_asset, v_before)
+        
+        # 2. Check public stats immediately reflects the new asset
+        res_stats = self.client.get("/api/public/stats")
+        self.assertEqual(res_stats.status_code, 200)
+        stats = json.loads(res_stats.data)
+        self.assertGreaterEqual(stats["fleet"]["total"], 1)
+        self.assertEqual(stats["version"], v_after_asset)
+
+    def tearDown(self):
+        super().tearDown()
+        # Clean any test-created voice files
+        upload_audio_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "audio")
+        if os.path.exists(upload_audio_dir):
+            for fn in os.listdir(upload_audio_dir):
+                if fn.startswith("voice_") and fn.endswith(".wav"):
+                    try:
+                        os.remove(os.path.join(upload_audio_dir, fn))
+                    except Exception:
+                        pass
 
 if __name__ == "__main__":
     unittest.main()

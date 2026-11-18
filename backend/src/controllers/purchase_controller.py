@@ -5,6 +5,7 @@ from ..database.connection import one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need, can
 from ..services.currency_service import convert_to_kwd
+from ..services.sync_service import notify_sync
 from .asset_controller import save_file
 from .inventory_controller import stock_move
 from ..utils.helpers import P, now
@@ -84,6 +85,7 @@ def pur_new():
         c.execute("UPDATE purchases SET code=? WHERE id=?", (code, cur.lastrowid))
         audit("request", "purchase", code, name)
         notify("management", f"Purchase requested {code}", f"{q:g} x {name} from {sup_name or 'TBC'} ({est_kwd:g} KWD)", kind="purchase", link="#pur")
+    notify_sync("purchase_create", {"purchase_id": cur.lastrowid, "code": code})
     return jsonify(id=cur.lastrowid, code=code)
 
 @purchase_bp.get("/api/purchases")
@@ -115,6 +117,7 @@ def pur_decide(i):
         c.execute("UPDATE purchases SET status=?, decided_by=? WHERE id=?", (st, session["name"], i))
         audit(d, "purchase", r["code"])
         notify("procurement", f"Purchase {r['code']} {st}", f"Decided by {session['name']}", kind="purchase", link="#pur")
+    notify_sync("purchase_decide", {"purchase_id": i, "status": st})
     return jsonify(ok=1)
 
 @purchase_bp.post("/api/purchases/<int:i>/record")
@@ -150,6 +153,7 @@ def pur_record(i):
                          VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
                       (r["asset_id"], r["wo_id"], "external_purchase", round(r["qty"] * up_kwd, 3), f"pur:{i}", f"{r['code']}: {r['qty']:g} x {r['part_name']}, invoice {p.get('invoice_no') or '-'}", session["name"], now(), currency, round(r["qty"] * up, 3) if currency != "KWD" else None, rate_applied))
         audit("record", "purchase", r["code"], f"unit {up_kwd} KWD ({up} {currency})")
+    notify_sync("purchase_record", {"purchase_id": i})
     return jsonify(ok=1, doc_id=doc_id)
 
 @purchase_bp.get("/api/purchases/<int:i>/documents")
@@ -181,6 +185,7 @@ def pur_doc_upload(i):
         if not p: raise Bad("Purchase record not found", 404)
         doc_id = save_file(c, f, asset_id=p["asset_id"], wo_id=p["wo_id"], purchase_id=i, kind=kind)
         audit("upload", "purchase", p["code"], f"{kind}: {f.filename}")
+    notify_sync("purchase_document", {"purchase_id": i, "doc_id": doc_id})
     return jsonify(ok=True, doc_id=doc_id, message="Document uploaded successfully.")
 
 @purchase_bp.delete("/api/purchases/<int:i>/documents/<int:doc_id>")
@@ -196,4 +201,5 @@ def pur_doc_delete(i, doc_id):
             except Exception: pass
         c.execute("DELETE FROM documents WHERE id=?", (doc_id,))
         audit("delete", "purchase_doc", i, f"Deleted document {doc['filename']}")
+    notify_sync("purchase_document_delete", {"purchase_id": i, "doc_id": doc_id})
     return jsonify(ok=True, message="Document removed.")

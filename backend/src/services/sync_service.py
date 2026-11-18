@@ -109,11 +109,14 @@ def compute_public_stats(db_conn):
     stages["Reported"] = cur.fetchone()[0] or 0
     cur.execute("SELECT count(*) FROM complaints WHERE status = 'Approved'")
     stages["Approved"] = cur.fetchone()[0] or 0
-    cur.execute("SELECT count(*) FROM work_orders WHERE status = 'Pending'")
+    cur.execute("SELECT count(*) FROM work_orders WHERE status IN ('Pending', 'Assigned', 'Awaiting Approval')")
     stages["Assigned"] = cur.fetchone()[0] or 0
-    cur.execute("SELECT count(*) FROM work_orders WHERE status = 'In Progress'")
+    cur.execute("SELECT count(*) FROM work_orders WHERE LOWER(status) = 'in progress'")
     stages["In progress"] = cur.fetchone()[0] or 0
-    cur.execute("SELECT count(*) FROM purchases WHERE status = 'Requested'")
+    cur.execute("""
+        SELECT (SELECT count(*) FROM work_orders WHERE status LIKE 'Waiting%' OR status = 'Parts sourcing') +
+               (SELECT count(*) FROM purchases WHERE status = 'Requested')
+    """)
     stages["Waiting for parts"] = cur.fetchone()[0] or 0
 
     # Priority Work Orders
@@ -121,8 +124,8 @@ def compute_public_stats(db_conn):
         SELECT w.id, w.code, a.code as asset_code, a.name as asset_name, w.description, w.priority, w.status
         FROM work_orders w
         JOIN assets a ON w.asset_id = a.id
-        WHERE w.status NOT IN ('Completed', 'Released', 'Rejected')
-        ORDER BY CASE w.priority WHEN 'Urgent' THEN 1 WHEN 'High' THEN 2 WHEN 'Normal' THEN 3 ELSE 4 END, w.id DESC
+        WHERE w.status NOT IN ('Completed', 'Released', 'Rejected', 'Cancelled')
+        ORDER BY CASE w.priority WHEN 'Critical' THEN 1 WHEN 'Urgent' THEN 1 WHEN 'High' THEN 2 WHEN 'Normal' THEN 3 ELSE 4 END, w.id DESC
         LIMIT 4
     """)
     priority_wo = [

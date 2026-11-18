@@ -5,6 +5,7 @@ from ..config import config
 from ..database.connection import get_db, one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need, can
+from ..services.sync_service import notify_sync
 from ..utils.helpers import P, now, make_csv_response, parse_csv_file
 
 asset_bp = Blueprint("assets", __name__)
@@ -135,6 +136,7 @@ def asset_transfer(i):
                   (i, from_name, to_name, from_site_id, to_site_id, reason or None, odo, transporter or None, session["name"], is_d, now()))
         audit("transfer", "asset", a["code"], f"Relocated from {from_name or 'None'} to {to_name}")
         notify("workshop", f"Asset {a['code']} Transferred", f"{a['name']} moved to {to_name}. Transporter: {transporter or 'Direct'}", kind="transfer", link=f"#asset:{i}")
+    notify_sync("asset_transfer", {"asset_id": i, "from_site": from_name, "to_site": to_name})
     return jsonify(ok=1, from_site=from_name, to_site=to_name)
 
 @asset_bp.post("/api/assets")
@@ -149,6 +151,7 @@ def asset_new():
         code = f"AST-{cur.lastrowid:05d}"
         c.execute("UPDATE assets SET code=? WHERE id=?", (code, cur.lastrowid))
         audit("create", "asset", code, d["name"])
+    notify_sync("asset_create", {"asset_id": cur.lastrowid, "code": code})
     return jsonify(id=cur.lastrowid, code=code)
 
 @asset_bp.put("/api/assets/<int:i>")
@@ -169,6 +172,7 @@ def asset_edit(i):
             else:
                 c.execute("INSERT INTO asset_changes(asset_id,field,old,new,by,at) VALUES(?,?,?,?,?,?)", (i, k, o, n, session["name"], now()))
         audit("edit", "asset", a["code"])
+    notify_sync("asset_edit", {"asset_id": i})
     return jsonify(ok=1)
 
 @asset_bp.post("/api/assets/<int:i>/archive")
@@ -179,6 +183,7 @@ def asset_arch(i):
         if not a: raise Bad("Asset not found", 404)
         c.execute("UPDATE assets SET archived=?, status=? WHERE id=?", (0 if a["archived"] else 1, "Active" if a["archived"] else "Retired", i))
         audit("restore" if a["archived"] else "archive", "asset", a["code"])
+    notify_sync("asset_archive", {"asset_id": i})
     return jsonify(ok=1)
 
 @asset_bp.get("/api/assets")
@@ -272,6 +277,8 @@ def asset_import():
             c.execute("UPDATE assets SET code=? WHERE id=?", (code, cur.lastrowid))
             imported += 1
         audit("import", "assets", imported, f"{len(errors)} errors" if errors else "all ok")
+    if imported > 0:
+        notify_sync("asset_import", {"count": imported})
     return jsonify(imported=imported, errors=errors)
 
 @asset_bp.post("/api/assets/<int:i>/documents")
@@ -283,6 +290,7 @@ def doc_up(i):
         if not c.execute("SELECT 1 FROM assets WHERE id=?", (i,)).fetchone(): raise Bad("Asset not found", 404)
         d = save_file(c, f, asset_id=i, kind=P().get("kind") or "Document")
         audit("upload", "asset", i, f.filename)
+    notify_sync("asset_document", {"asset_id": i, "doc_id": d})
     return jsonify(id=d)
 
 @asset_bp.get("/api/files/<int:i>")

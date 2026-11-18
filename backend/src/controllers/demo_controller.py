@@ -9,6 +9,7 @@ from ..middleware.auth_middleware import need
 from ..services.demo_service import (
     get_demo_counts, load_demo_dataset, clear_demo_dataset, CLEANUP_LOCK
 )
+from ..services.sync_service import notify_sync
 
 demo_bp = Blueprint("demo", __name__)
 
@@ -34,6 +35,7 @@ def demo_load():
     with tx() as c:
         load_demo_dataset(c)
         audit("load_demo_data", "demo", "0", "Loaded standard Kuwait fleet demo dataset")
+    notify_sync("demo_load")
     return jsonify(ok=True, message="Demo data loaded successfully.", status=get_demo_counts())
 
 @demo_bp.post("/api/admin/demo/clear")
@@ -57,6 +59,7 @@ def demo_clear():
             total_deleted = sum(counts.values())
             audit("clear_demo_data", "demo", "0", f"Permanently cleared {total_deleted} demo records and {deleted_files} files. Pre-cleanup backup: {backup_fn}")
 
+        notify_sync("demo_clear")
         return jsonify(
             ok=True,
             message=f"Successfully cleared {total_deleted} demo records and {deleted_files} files.",
