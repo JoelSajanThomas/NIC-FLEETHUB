@@ -93,6 +93,15 @@ const I18N = {
     voice_orig: "Spoken Original Transcript:",
     voice_trans: "English Translation (Editable Review):",
     voice_detected_lang: "Detected Language:",
+    // AI Document Scanner & Auto-Fill
+    doc_ai_title: "AI Multilingual Document Detection & Auto-Fill",
+    doc_ai_step_uploaded: "📄 Uploaded",
+    doc_ai_step_lang: "🌐 Language",
+    doc_ai_step_ocr: "🔍 Read & OCR",
+    doc_ai_step_fill: "⚡ Auto-Fill",
+    doc_ai_detecting: "Detecting language & extracting fields...",
+    doc_ai_ready: "Fields auto-filled. Please review and edit before saving.",
+    doc_ai_verified: "✓ Calculations Verified",
     // Status Chips
     st_active: "Active",
     st_under_repair: "Under Repair",
@@ -194,6 +203,14 @@ const I18N = {
     voice_orig: "बोला गया मूल विवरण:",
     voice_trans: "अंग्रेजी अनुवाद (समीक्षा एवं संपादन):",
     voice_detected_lang: "पहचानी गई भाषा:",
+    doc_ai_title: "एआई बहुभाषी दस्तावेज पहचान एवं स्वतः फॉर्म-भरण",
+    doc_ai_step_uploaded: "📄 अपलोड हुआ",
+    doc_ai_step_lang: "🌐 भाषा",
+    doc_ai_step_ocr: "🔍 ओसीआर एवं वाचन",
+    doc_ai_step_fill: "⚡ स्वतः भरें",
+    doc_ai_detecting: "भाषा की पहचान एवं डेटा निकाला जा रहा है...",
+    doc_ai_ready: "फॉर्म फ़ील्ड स्वतः भर गए हैं। कृपया समीक्षा करें।",
+    doc_ai_verified: "✓ गणनाएं सत्यापित (मात्रा × दर = कुल)",
     st_active: "सक्रिय",
     st_under_repair: "मरम्मत में",
     st_out_of_service: "बंद",
@@ -294,6 +311,14 @@ const I18N = {
     voice_orig: "النص المنطوق الأصلي:",
     voice_trans: "الترجمة الإنجليزية (مراجعة وتعديل):",
     voice_detected_lang: "اللغة المكتشفة تلقائياً:",
+    doc_ai_title: "التعرف الذكي على الوثائق والتعبئة التلقائية",
+    doc_ai_step_uploaded: "📄 تم الرفع",
+    doc_ai_step_lang: "🌐 لغة المستند",
+    doc_ai_step_ocr: "🔍 قراءة وتحليل",
+    doc_ai_step_fill: "⚡ تعبئة تلقائية",
+    doc_ai_detecting: "جاري اكتشاف اللغة واستخراج حقول الفاتورة...",
+    doc_ai_ready: "تمت تعبئة الحقول تلقائياً. يرجى المراجعة والاعتماد.",
+    doc_ai_verified: "✓ الحسابات الرياضية مدققة ومطابقة",
     st_active: "نشط بالخدمة",
     st_under_repair: "تحت الإصلاح",
     st_out_of_service: "متوقف",
@@ -707,6 +732,161 @@ function setupVoiceRecorder(targetName, container) {
   };
 }
 
+// ---------------- 3. AI-POWERED MULTILINGUAL DOCUMENT AUTO-FILL MODULE ----------------
+function setupDocumentAutoFill(formContainer, fileInput, docContext = "purchase") {
+  if (!formContainer || !fileInput) return;
+  if (fileInput._hasAutoFill) return;
+  fileInput._hasAutoFill = true;
+
+  const banner = document.createElement("div");
+  banner.className = "doc-ai-banner";
+  banner.style.display = "none";
+  banner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700;font-size:.825rem;color:#1e3a8a">🤖 ${t("doc_ai_title")}</span>
+      <span class="doc-ai-badge" id="aiDocBadge" style="display:none"></span>
+    </div>
+    <div class="doc-ai-steps">
+      <span class="doc-ai-step active" id="aiStepUpload">${t("doc_ai_step_uploaded")}</span>
+      <span class="doc-ai-arrow">→</span>
+      <span class="doc-ai-step" id="aiStepLang">${t("doc_ai_step_lang")}</span>
+      <span class="doc-ai-arrow">→</span>
+      <span class="doc-ai-step" id="aiStepOcr">${t("doc_ai_step_ocr")}</span>
+      <span class="doc-ai-arrow">→</span>
+      <span class="doc-ai-step" id="aiStepFill">${t("doc_ai_step_fill")}</span>
+    </div>
+    <div class="doc-ai-status" id="aiDocStatus">
+      <span class="voice-rec-dot" style="background:#2563eb"></span>
+      ${t("doc_ai_detecting")}
+    </div>
+    <div id="aiDocReview" style="display:none;font-size:.78rem;margin-top:.25rem"></div>
+  `;
+
+  const fieldWrapper = fileInput.closest("div") || fileInput.parentElement;
+  if (fieldWrapper) fieldWrapper.after(banner);
+
+  const stepUpload = banner.querySelector("#aiStepUpload");
+  const stepLang = banner.querySelector("#aiStepLang");
+  const stepOcr = banner.querySelector("#aiStepOcr");
+  const stepFill = banner.querySelector("#aiStepFill");
+  const aiBadge = banner.querySelector("#aiDocBadge");
+  const aiStatus = banner.querySelector("#aiDocStatus");
+
+  fileInput.addEventListener("change", async () => {
+    if (!fileInput.files || !fileInput.files[0]) return;
+    const file = fileInput.files[0];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext)) return;
+
+    banner.style.display = "grid";
+    banner.className = "doc-ai-banner scanning";
+    stepUpload.className = "doc-ai-step done";
+    stepUpload.textContent = `📄 ${file.name.slice(0, 20)}`;
+    stepLang.className = "doc-ai-step active";
+    stepOcr.className = "doc-ai-step";
+    stepFill.className = "doc-ai-step";
+    aiBadge.style.display = "none";
+    aiStatus.innerHTML = `<span class="voice-rec-dot" style="background:#2563eb"></span> ${t("doc_ai_detecting")}`;
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("context", docContext);
+
+    try {
+      stepOcr.className = "doc-ai-step active";
+      const res = await post("/api/documents/scan-autofill", fd);
+
+      // Language step
+      stepLang.className = "doc-ai-step done";
+      aiBadge.style.display = "inline-flex";
+      aiBadge.className = `doc-ai-badge ${res.detected_lang || 'en'}`;
+      const langLabels = { en: "English", hi: "हिन्दी (Hindi)", ar: "العربية (Arabic)" };
+      aiBadge.textContent = `Detected: ${langLabels[res.detected_lang] || res.detected_lang_name} (${res.overall_confidence}% conf)`;
+
+      // OCR & Fill steps
+      stepOcr.className = "doc-ai-step done";
+      stepFill.className = "doc-ai-step done";
+      banner.className = "doc-ai-banner ready";
+
+      const f = res.fields || {};
+      let filledCount = 0;
+
+      function populate(inputNames, fieldKey) {
+        if (!f[fieldKey] || f[fieldKey].value === undefined || f[fieldKey].value === null || f[fieldKey].value === "") return;
+        const fieldData = f[fieldKey];
+        const val = fieldData.value;
+        for (const name of inputNames) {
+          const inp = formContainer.querySelector(`[name="${name}"]`);
+          if (inp) {
+            inp.value = val;
+            inp.classList.add("ai-populated");
+            inp.dispatchEvent(new Event("input", { bubbles: true }));
+            inp.dispatchEvent(new Event("change", { bubbles: true }));
+            filledCount++;
+
+            const parentLabel = inp.closest("label");
+            if (parentLabel && !parentLabel.querySelector(".ai-field-tag")) {
+              const tag = document.createElement("span");
+              tag.className = "ai-field-tag";
+              tag.textContent = `✓ AI ${Math.round((fieldData.confidence || 0.9) * 100)}%`;
+              parentLabel.append(tag);
+            }
+
+            if (fieldData.original_value && fieldData.original_value !== val) {
+              const parentDiv = inp.closest("div");
+              if (parentDiv && !parentDiv.querySelector(".ai-orig-label")) {
+                const origSub = document.createElement("small");
+                origSub.className = "ai-orig-label";
+                origSub.textContent = `Original: "${fieldData.original_value}" → Translated to English`;
+                parentDiv.append(origSub);
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      populate(["invoice_no", "ref_no", "bill_no", "doc_no"], "invoice_no");
+      populate(["supplier", "supplier_name", "vendor"], "supplier");
+      populate(["date", "purchased_at", "record_date", "issue_date"], "date");
+      populate(["part_name", "name", "description", "title"], "part_name");
+      populate(["qty", "quantity"], "qty");
+      populate(["unit_price", "est_price", "price", "unit_cost"], "unit_price");
+      populate(["amount", "cost", "total", "total_spent"], "total_amount");
+      populate(["tax", "vat"], "tax");
+      populate(["reg_no", "plate_no"], "reg_no");
+      populate(["vin", "serial_no", "vin_or_serial"], "vin");
+      populate(["insurance_company"], "insurance_company");
+      populate(["insurance_policy"], "insurance_policy");
+
+      if (f.currency && f.currency.value) {
+        const curSelect = formContainer.querySelector('select[name="currency"]');
+        if (curSelect) {
+          for (let opt of curSelect.options) {
+            if (opt.value === f.currency.value) {
+              curSelect.value = f.currency.value;
+              curSelect.dispatchEvent(new Event("change", { bubbles: true }));
+              filledCount++;
+              break;
+            }
+          }
+        }
+      }
+
+      let statusHtml = `<b>✓ ${t("doc_ai_ready")}</b> (${filledCount} fields populated).`;
+      if (res.calculations_verified) {
+        statusHtml += ` <span style="color:#15803d;font-weight:600;margin-left:.35rem">${t("doc_ai_verified")}</span>`;
+      }
+      aiStatus.innerHTML = statusHtml;
+
+    } catch (err) {
+      stepOcr.className = "doc-ai-step active";
+      aiStatus.textContent = "AI scan skipped: " + err.message;
+      banner.className = "doc-ai-banner";
+    }
+  });
+}
+
 function ask(title, fs, voiceField = null) {
   return new Promise(res => {
     const d = document.createElement("dialog");
@@ -726,7 +906,7 @@ function ask(title, fs, voiceField = null) {
                 ` : f.t === "textarea" ? `
                   <textarea name="${f.n}" rows="3" ${f.r ? "required" : ""}>${esc(f.v ?? "")}</textarea>
                 ` : `
-                  <input name="${f.n}" type="${f.t || "text"}" ${f.t === "number" ? 'step="any"' : ""} ${f.t === "file" ? 'accept=".pdf,.jpg,.jpeg,.png,.webm,.wav,.mp3"' : ""} ${f.r ? "required" : ""} ${f.t === "file" ? "" : `value="${esc(f.v ?? "")}"`}>
+                  <input name="${f.n}" type="${f.t || "text"}" ${f.t === "number" ? 'step="any"' : ""} ${f.t === "file" ? 'accept=".pdf,.jpg,.jpeg,.png,.webp"' : ""} ${f.r ? "required" : ""} ${f.t === "file" ? "" : `value="${esc(f.v ?? "")}"`}>
                 `}
               </label>
             </div>
@@ -747,6 +927,20 @@ function ask(title, fs, voiceField = null) {
       const fieldContainer = d.querySelector(`#field_${voiceField}`) || d.querySelector("#voiceAnchor");
       setupVoiceRecorder(voiceField, fieldContainer);
     }
+
+    // Auto-detect file inputs and attach Document AI Auto-Fill
+    const form = d.querySelector("form");
+    const fileInputs = d.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(fileInput => {
+      let ctx = "purchase";
+      const lowerTitle = title.toLowerCase();
+      if (lowerTitle.includes("expense") || lowerTitle.includes("maintenance expense")) ctx = "expense";
+      else if (lowerTitle.includes("equipment") || lowerTitle.includes("vehicle") || lowerTitle.includes("relocate") || lowerTitle.includes("specification")) ctx = "vehicle";
+      else if (lowerTitle.includes("historical") || lowerTitle.includes("paper record")) ctx = "historical";
+      else if (lowerTitle.includes("stock") || lowerTitle.includes("part") || lowerTitle.includes("catalogue")) ctx = "part";
+
+      setupDocumentAutoFill(form, fileInput, ctx);
+    });
 
     d.showModal();
     d.querySelector("[data-c]").onclick = () => d.close();
@@ -1696,7 +1890,7 @@ ACT.arch = async d => {
 ACT.upDoc = async d => {
   const f = await ask("Upload Document or Photo", [
     { n: "kind", l: "Document Type", t: "select", o: ["Registration", "Insurance Certificate", "Inspection Certificate", "Photograph", "Job Card", "Technical Spec", "Other"].map(x => [x, x]) },
-    { n: "file", l: "Document / Image (PDF, JPG, PNG)", t: "file", r: 1 }
+    { n: "file", l: "Document / Image (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 }
   ]);
   if (!f) return;
   await post(`/assets/${d.id}/documents`, f);
@@ -1873,6 +2067,7 @@ const CURR_OPTS = [
 ACT.newU = async () => {
   const [partsList, supList] = await Promise.all([api("/parts"), api("/suppliers")]);
   const f = await ask("Request External Purchase", [
+    { n: "bill", l: "📄 Upload Quotation / Invoice / Bill (Optional - AI Auto-Fills Form)", t: "file" },
     { n: "part_name", l: "Part Name / Description", r: 1 },
     { n: "qty", l: "Quantity", t: "number", r: 1 },
     { n: "part_id", l: "Catalogue Match", t: "select", o: opts(partsList, "id", p => `${p.stock_id} · ${p.name} (${p.qty} in stock)`, "(Not in catalogue)") },
@@ -1898,6 +2093,7 @@ ACT.pdec = async d => {
 
 ACT.prec = async d => {
   const f = await ask("Record Actual Purchase & Upload Original Bill", [
+    { n: "bill", l: "Original Bill / Invoice / Receipt (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 },
     { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
     { n: "unit_price", l: "Actual Unit Price", t: "number", r: 1 },
     { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
@@ -1908,8 +2104,7 @@ ACT.prec = async d => {
       ["Supplier Invoice", "Supplier Invoice"],
       ["Purchase Receipt", "Purchase Receipt"],
       ["Supporting Document", "Supporting Document"]
-    ], v: "External Purchase Bill" },
-    { n: "bill", l: "Original Bill / Invoice / Receipt (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 }
+    ], v: "External Purchase Bill" }
   ]);
   if (!f) return;
   await post(`/purchases/${d.id}/record`, f);
@@ -2017,6 +2212,9 @@ ACT.purDocs = async d => {
 
     // Upload form handler
     const form = dlg.querySelector("#purDocUploadForm");
+    const purFileInput = form.querySelector('input[type="file"]');
+    setupDocumentAutoFill(form, purFileInput, "purchase");
+
     form.onsubmit = async (e) => {
       e.preventDefault();
       const fileInput = form.querySelector('input[type="file"]');
@@ -2139,6 +2337,7 @@ ACT.toggleSup = async d => {
 
 ACT.newE = async () => {
   const f = await ask("Record External Maintenance Expense", [
+    { n: "bill", l: "Invoice / Receipt (PDF, JPG, PNG, WEBP)", t: "file", r: 1 },
     { n: "asset_id", l: "Equipment / Vehicle", t: "select", o: await aOpts(), r: 1 },
     { n: "wo_id", l: "Work Order (Optional)", t: "select", o: await woOpts("(None)") },
     { n: "kind", l: "Expense Type", t: "select", o: [
@@ -2151,9 +2350,8 @@ ACT.newE = async () => {
     { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
     { n: "amount", l: "Amount Paid", t: "number", r: 1 },
     { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
-    { n: "note", l: "Payment Note / Work Done", r: 1 },
-    { n: "bill", l: "Invoice / Receipt (PDF, JPG, PNG)", t: "file", r: 1 }
-  ], "note");
+    { n: "note", l: "Payment Note / Work Done", r: 1 }
+  ]);
   if (!f) return;
   await post("/expenses", f);
   await done("Expense recorded.");
@@ -2161,6 +2359,7 @@ ACT.newE = async () => {
 
 ACT.addH = async () => {
   const f = await ask("Digitize Historical Paper Record", [
+    { n: "document", l: "Scanned Paperwork / Bill (PDF, JPG, PNG, WEBP)", t: "file" },
     { n: "asset_id", l: "Vehicle / Equipment", t: "select", o: await aOpts(), r: 1 },
     { n: "record_type", l: "Record Type", t: "select", o: ["service", "repair", "complaint", "parts_replacement", "expense", "inspection", "job_card", "other"].map(x => [x, x.toUpperCase()]) },
     { n: "record_date", l: "Historical Date", t: "date", r: 1 },
@@ -2171,9 +2370,8 @@ ACT.addH = async () => {
     { n: "supplier_vendor", l: "Workshop / Vendor" },
     { n: "performed_by", l: "Technician" },
     { n: "cost", l: "Historical Cost (KWD)", t: "number" },
-    { n: "verified", l: "Verification Status", t: "select", o: [["1", "Verified"], ["0", "Unverified / Incomplete"]] },
-    { n: "document", l: "Scanned Paperwork / Bill", t: "file" }
-  ], "description");
+    { n: "verified", l: "Verification Status", t: "select", o: [["1", "Verified"], ["0", "Unverified / Incomplete"]] }
+  ]);
   if (!f) return;
   const r = await post("/historical", f);
   await done("Historical paper record digitized: " + r.code);

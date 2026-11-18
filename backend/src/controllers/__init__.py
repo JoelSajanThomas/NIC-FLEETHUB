@@ -15,3 +15,4 @@ from .purchase_controller import purchase_bp
 from .expense_controller import expense_bp
 from .historical_controller import historical_bp
 from .report_controller import report_bp
+from .document_ai_controller import document_ai_bp

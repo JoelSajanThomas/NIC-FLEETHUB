@@ -128,5 +128,86 @@ class FleetHubBackendTestCase(unittest.TestCase):
             with self.assertRaises(Bad):
                 validate_purchase_file(mock_bad)
 
+    def test_document_ai_multilingual_extraction(self):
+        """Test AI document recognition, language detection & translation across EN, HI, AR."""
+        from src.services.document_ai_service import process_document
+
+        # 1. English
+        en_text = """
+        INVOICE
+        Supplier: Al-Ghanim Heavy Equipment Co.
+        Invoice No: INV-2026-9041
+        Date: 2026-11-18
+        Item Description: Caterpillar Hydraulic Filter Element
+        Qty: 4
+        Unit Price: 15.500
+        Grand Total: 62.000 KWD
+        """
+        res_en = process_document(en_text.encode('utf-8'), 'invoice.txt', 'purchase')
+        self.assertEqual(res_en["detected_lang"], "en")
+        self.assertEqual(res_en["fields"]["invoice_no"]["value"], "INV-2026-9041")
+        self.assertEqual(res_en["fields"]["total_amount"]["value"], 62.0)
+        self.assertTrue(res_en["calculations_verified"])
+
+        # 2. Hindi (Auto-detect & translate to English)
+        hi_text = """
+        कर चालान (Tax Invoice)
+        विक्रेता: शर्मा मोटर्स
+        चालान संख्या: SH-7782
+        दिनांक: 18/11/2026
+        सामग्री विवरण: ब्रेक पैड सेट
+        मात्रा: 2
+        इकाई मूल्य: 25.000
+        कुल राशि: 50.000
+        """
+        res_hi = process_document(hi_text.encode('utf-8'), 'hindi_bill.txt', 'purchase')
+        self.assertEqual(res_hi["detected_lang"], "hi")
+        self.assertEqual(res_hi["fields"]["invoice_no"]["value"], "SH-7782")
+        self.assertEqual(res_hi["fields"]["total_amount"]["value"], 50.0)
+        self.assertIn("Sharma Motors", res_hi["fields"]["supplier"]["value"])
+        self.assertTrue(res_hi["calculations_verified"])
+
+        # 3. Arabic (Auto-detect & translate to English)
+        ar_text = """
+        فاتورة ضريبية
+        المورد: مؤسسة الصليبية لقطع الغيار
+        رقم الفاتورة: KUW-55410
+        التاريخ: 2026-11-18
+        بيان الأصناف: زيت محرك هيدروليك 20 لتر
+        الكمية: 5
+        سعر الوحدة: 8.000
+        المجموع الكلي: 40.000 د.ك
+        """
+        res_ar = process_document(ar_text.encode('utf-8'), 'arabic_invoice.txt', 'purchase')
+        self.assertEqual(res_ar["detected_lang"], "ar")
+        self.assertEqual(res_ar["fields"]["invoice_no"]["value"], "KUW-55410")
+        self.assertEqual(res_ar["fields"]["total_amount"]["value"], 40.0)
+        self.assertIn("Sulaibiya", res_ar["fields"]["supplier"]["value"])
+        self.assertTrue(res_ar["calculations_verified"])
+
+    def test_document_ai_scan_api_endpoint(self):
+        """Test /api/documents/scan-autofill endpoint."""
+        import io, pymupdf
+        # Log in first
+        self.client.post("/api/login", json={"username": "admin", "password": "admin12345"})
+
+        # Create real PDF in memory
+        doc = pymupdf.open()
+        page = doc.new_page()
+        page.insert_text((50, 72), "INVOICE\nSupplier: Gulf Heavy Machinery\nInvoice No: GHM-1200\nDate: 2026-11-18\nTotal: 100.000 KWD", fontsize=12)
+        pdf_bytes = doc.tobytes()
+        doc.close()
+
+        res = self.client.post("/api/documents/scan-autofill", data={
+            "file": (io.BytesIO(pdf_bytes), "invoice.pdf"),
+            "context": "purchase"
+        }, content_type="multipart/form-data")
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertTrue(data["success"])
+        self.assertEqual(data["detected_lang"], "en")
+        self.assertIn("invoice_no", data["fields"])
+        self.assertEqual(data["fields"]["invoice_no"]["value"], "GHM-1200")
+
 if __name__ == "__main__":
     unittest.main()
