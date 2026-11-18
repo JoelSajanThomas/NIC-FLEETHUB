@@ -34,14 +34,14 @@ def verify_token(token):
         return None
 
 def check_bearer_auth():
-    """Extract session data from Authorization: Bearer token if session cookie is absent."""
-    if "uid" not in session:
-        auth_hdr = request.headers.get("Authorization", "")
-        if auth_hdr.startswith("Bearer "):
-            raw = auth_hdr[7:].strip()
-            t_data = verify_token(raw)
-            if t_data and isinstance(t_data, dict) and "uid" in t_data:
-                session.update(t_data)
+    """Extract session data from Authorization: Bearer token, taking precedence over session cookies."""
+    auth_hdr = request.headers.get("Authorization", "")
+    if auth_hdr.startswith("Bearer "):
+        raw = auth_hdr[7:].strip()
+        t_data = verify_token(raw)
+        if t_data and isinstance(t_data, dict) and "uid" in t_data:
+            session.clear()
+            session.update(t_data)
 
 def can(p):
     """Check whether active session role has permission p."""

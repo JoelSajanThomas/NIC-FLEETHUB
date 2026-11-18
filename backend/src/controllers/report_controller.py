@@ -199,8 +199,7 @@ def backup():
     dst = sqlite3.connect(os.path.join(config.BACKUP_DIR, fn))
     get_db().backup(dst)
     dst.close()
-    with tx():
-        audit("backup", "system", 0, fn)
+    audit("backup", "system", 0, fn)
     return jsonify(file=fn)
 
 @report_bp.get("/api/admin/backups")

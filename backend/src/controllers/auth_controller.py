@@ -31,8 +31,7 @@ def login():
         role=r["role"],
         lang=r.get("preferred_lang") or "en"
     )
-    with tx():
-        audit("login", "user", r["id"])
+    audit("login", "user", r["id"])
     return me()
 
 @auth_bp.post("/api/logout")
