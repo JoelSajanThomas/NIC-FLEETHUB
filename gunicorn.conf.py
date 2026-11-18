@@ -1,8 +1,12 @@
 import os
 
-# Automatically bind to Render's dynamic $PORT (or fallback to 5000)
-port = os.environ.get("PORT", "5000")
-bind = f"0.0.0.0:{port}"
+# Render dynamically routes traffic to either PORT (default 10000 or custom 5000).
+# We bind to all active ports so Render's port scanner succeeds on both 10000 and 5000.
+active_ports = {"10000", "5000"}
+if os.environ.get("PORT"):
+    active_ports.add(str(os.environ["PORT"]).strip())
+
+bind = [f"0.0.0.0:{p}" for p in sorted(active_ports)]
 
 # Worker processes and threads (1 worker + 4 threads to fit within Render 512MB RAM)
 workers = int(os.environ.get("WEB_CONCURRENCY", 1))
