@@ -62,28 +62,37 @@ if(md)md.addEventListener("click",e=>{if(e.target===md)closeM(md)});
 if(mn)mn.addEventListener("click",e=>{if(e.target===mn)closeM(mn)});
 addEventListener("keydown",e=>{if(e.key==="Escape"){if(mn)closeM(mn);if(md)closeM(md);}});
 const rq=$("#rq");
-if(rq){
-  rq.addEventListener("submit",async e=>{
+if (rq) {
+  rq.addEventListener("submit", async e => {
     e.preventDefault();
-    const btn=rq.querySelector("button[type=submit],button.pill");
-    const orig=btn?btn.innerHTML:"";
-    if(btn){btn.disabled=true;btn.style.opacity=".7";}
-    const payload={
-      name:(rq.querySelector("[name=name]")?.value||"").trim(),
-      email:(rq.querySelector("[name=email]")?.value||"").trim(),
-      message:(rq.querySelector("[name=message]")?.value||"").trim()
+    const btn = rq.querySelector("button[type=submit], button.pill");
+    const orig = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = ".7";
+    }
+    const payload = {
+      name: (rq.querySelector("[name=name]")?.value || "").trim(),
+      email: (rq.querySelector("[name=email]")?.value || "").trim(),
+      message: (rq.querySelector("[name=message]")?.value || "").trim()
     };
-    try{
-      await fetch(API_BASE + "/api/inquiries",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(payload)
+    try {
+      await fetch(API_BASE + "/api/inquiries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
       });
-    }catch(_){}
-    if(btn){btn.disabled=false;btn.style.opacity="";btn.innerHTML=orig;}
-    const mf=$("#mf"),mo=$("#mo");
-    if(mf)mf.hidden=true;
-    if(mo)mo.hidden=false;
+    } catch (_) {}
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = "";
+      btn.innerHTML = orig;
+    }
+    const mf = $("#mf"), mo = $("#mo");
+    if (mf) mf.hidden = true;
+    if (mo) mo.hidden = false;
     rq.reset();
   });
 }
