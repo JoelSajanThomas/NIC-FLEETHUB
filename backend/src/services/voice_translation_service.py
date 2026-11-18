@@ -31,7 +31,19 @@ FLEET_GLOSSARY = {
     "الزور": "Al-Zour",
     "الصبية": "Subiya",
     "دينار": "KWD",
-    "فلس": "fils"
+    "فلس": "fils",
+    # Hindi Fleet & Document terms for offline fallback
+    "शर्मा मोटर्स": "Sharma Motors",
+    "ब्रेक पैड सेट": "Brake Pad Set",
+    "कर चालान": "Tax Invoice",
+    "चालान संख्या": "Invoice No",
+    "विक्रेता": "Supplier",
+    "सामग्री विवरण": "Item Description",
+    "मात्रा": "Quantity",
+    "इकाई मूल्य": "Unit Price",
+    "कुल राशि": "Total Amount",
+    "मुझे एक ब्रेक चाहिए": "I need a break",
+    "मुझे वाहन रखरखाव रिपोर्ट चाहिए": "I need a vehicle maintenance report"
 }
 
 AUTO_DICT = FLEET_GLOSSARY
@@ -83,6 +95,10 @@ def translate_text(text, target="en"):
         return text, "en", "English"
     
     # RULE 2: Hindi or Arabic -> Translate to clean, natural English
+    # Direct glossary match
+    if text in FLEET_GLOSSARY:
+        return FLEET_GLOSSARY[text], detected_code, detected_name
+
     try:
         source_lang = detected_code
         url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" + source_lang + "&tl=en&dt=t&q=" + urllib.parse.quote(text)
@@ -105,7 +121,18 @@ def translate_text(text, target="en"):
                 
             return translated, detected_code, detected_name
     except Exception as e:
-        # Fallback dictionary for offline or network interruption
+        # Secondary fallback: MyMemory or Glossary
+        try:
+            alt_url = "https://api.mymemory.translated.net/get?q=" + urllib.parse.quote(text) + f"&langpair={source_lang}|en"
+            alt_req = urllib.request.Request(alt_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(alt_req, timeout=4) as alt_res:
+                alt_data = json.loads(alt_res.read().decode("utf-8"))
+                alt_trans = alt_data.get("responseData", {}).get("translatedText", "").strip()
+                if alt_trans and not alt_trans.startswith("MYMEMORY WARNING"):
+                    return alt_trans, detected_code, detected_name
+        except Exception:
+            pass
+
         print(f"[Translation Service Warning] External translation fallback: {e}")
         fallback_trans = text
         for term, replacement in FLEET_GLOSSARY.items():
