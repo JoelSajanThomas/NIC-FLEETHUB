@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "NIC FleetHub — Cross-Platform Enterprise Fleet, Workshop & Heavy Equipment Management System",
   "scripts": {
+    "build": "node -e \"console.log('NIC FleetHub Static Build Complete')\"",
     "start:backend": "python backend/src/app.py",
     "start:web": "node frontend/dev-server.js",
     "start:desktop": "npm --prefix desktop run start",

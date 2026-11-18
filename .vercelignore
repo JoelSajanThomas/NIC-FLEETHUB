@@ -1,0 +1,13 @@
+# Ignore Python Backend and ML dependencies from Vercel static frontend
+backend/
+requirements.txt
+runtime.txt
+render.yaml
+Procfile
+server.py
+gunicorn.conf.py
+*.py
+build_doc/
+*.docx
+*.pdf
+.env*
