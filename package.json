@@ -12,7 +12,7 @@
     "mobile:sync": "npx cap sync",
     "mobile:android": "npx cap open android",
     "mobile:ios": "npx cap open ios",
-    "test:checkpoints": "python scratch/run_20_checkpoints.py"
+    "test": "python -m unittest discover -v -s backend/tests -t backend"
   },
   "keywords": [
     "cross-platform",
