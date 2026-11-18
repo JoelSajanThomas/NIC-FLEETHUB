@@ -154,6 +154,14 @@ ALTER TABLE audit ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS ix_stk_demo ON stock_tx(is_demo);
 CREATE INDEX IF NOT EXISTS ix_sup_demo ON suppliers(is_demo);
 CREATE INDEX IF NOT EXISTS ix_notif_demo ON notifications(is_demo);
+""",
+    # Migration 8: Multi-currency exchange rate extended schema
+    """
+ALTER TABLE exchange_rates ADD COLUMN rate_from_kwd REAL DEFAULT 0;
+ALTER TABLE exchange_rates ADD COLUMN is_manual INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE exchange_rates ADD COLUMN updated_at TEXT;
+UPDATE exchange_rates SET rate_from_kwd = ROUND(1.0 / rate_to_kwd, 4) WHERE rate_to_kwd > 0 AND (rate_from_kwd IS NULL OR rate_from_kwd = 0);
+UPDATE exchange_rates SET updated_at = COALESCE(last_updated, datetime('now')) WHERE updated_at IS NULL;
 """
 ]
 
