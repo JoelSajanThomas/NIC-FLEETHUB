@@ -59,11 +59,13 @@ const server = http.createServer((req, res) => {
 
     proxyReq.on("error", (err) => {
       console.error(`[Proxy Error] Unable to connect to backend at http://${BACKEND_HOST}:${BACKEND_PORT}:`, err.message);
-      res.writeHead(502, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        error: "Backend API unavailable. Ensure backend server is running on port " + BACKEND_PORT,
-        details: err.message
-      }));
+      if (!res.headersSent) {
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          error: "Backend API unavailable. Ensure backend server is running on port " + BACKEND_PORT,
+          details: err.message
+        }));
+      }
     });
 
     req.pipe(proxyReq);

@@ -13,6 +13,7 @@ document_ai_bp = Blueprint("document_ai", __name__)
 ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 
 @document_ai_bp.post("/api/documents/scan-autofill")
+@document_ai_bp.post("/documents/scan-autofill")
 @need(None)
 def scan_document():
     """

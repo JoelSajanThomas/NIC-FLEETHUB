@@ -286,15 +286,38 @@ def doc_up(i):
     return jsonify(id=d)
 
 @asset_bp.get("/api/files/<int:i>")
+@asset_bp.get("/files/<int:i>")
 @need(None)
 def file_get(i):
-    if not (can("asset.view") or can("inventory.view") or can("expense.view")):
-        raise Bad("Not permitted", 403)
     d = one("SELECT * FROM documents WHERE id=?", (i,))
     if not d: raise Bad("Not found", 404)
+    
+    # Check permissions: staff, supervisors, mechanics, drivers, or document creator
+    u_role = session.get("role", "")
+    u_name = session.get("name", "")
+    u_user = session.get("username", "")
+    is_owner = (d["by"] in (u_name, u_user))
+    has_perm = (
+        can("asset.view") or can("inventory.view") or can("expense.view") or
+        can("complaint.review") or can("wo.view") or can("wo.update") or
+        u_role in ("admin", "supervisor", "manager", "mechanic", "driver") or
+        is_owner
+    )
+    if not has_perm:
+        raise Bad("Not permitted", 403)
+
+    fpath = os.path.join(config.UPLOAD_DIR, d["stored"])
+    if not os.path.exists(fpath):
+        alt_path = os.path.join(config.UPLOAD_DIR, "audio", os.path.basename(d["stored"]))
+        if os.path.exists(alt_path):
+            fpath = alt_path
+
+    if not os.path.exists(fpath):
+        raise Bad("Physical file not found on storage", 404)
+
     return send_file(
-        os.path.join(config.UPLOAD_DIR, d["stored"]),
-        mimetype=d["mime"],
+        fpath,
+        mimetype=d["mime"] or "application/octet-stream",
         download_name=d["filename"],
         as_attachment=request.args.get("dl") == "1"
     )

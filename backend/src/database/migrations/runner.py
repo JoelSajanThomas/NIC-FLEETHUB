@@ -133,6 +133,17 @@ CREATE INDEX IF NOT EXISTS ix_p_demo ON parts(is_demo);
 CREATE INDEX IF NOT EXISTS ix_pu_demo ON purchases(is_demo);
 CREATE INDEX IF NOT EXISTS ix_e_demo ON expenses(is_demo);
 CREATE INDEX IF NOT EXISTS ix_d_demo ON documents(is_demo);
+""",
+    # Migration 6: Voice metadata & AI description permanent persistence
+    """
+ALTER TABLE documents ADD COLUMN duration REAL DEFAULT 0;
+ALTER TABLE documents ADD COLUMN original_lang TEXT;
+ALTER TABLE documents ADD COLUMN original_transcript TEXT;
+ALTER TABLE documents ADD COLUMN english_translation TEXT;
+ALTER TABLE documents ADD COLUMN ai_description TEXT;
+
+ALTER TABLE complaints ADD COLUMN ai_description TEXT;
+ALTER TABLE work_orders ADD COLUMN ai_description TEXT;
 """
 ]
 

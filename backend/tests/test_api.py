@@ -107,6 +107,110 @@ class FleetHubBackendTestCase(unittest.TestCase):
         self.assertEqual(data["detected_lang"], "en")
         self.assertEqual(data["detected_lang_name"], "English")
         self.assertIn("Engine overheating", data["english_translation"])
+        self.assertTrue(bool(data.get("ai_description")))
+
+    def test_unknown_api_route_bug_resolved(self):
+        """Module 1 Verification: Test that /voice/process, /api/voice/process, and duplicate /api/api/ paths all resolve successfully without 404 Unknown API route."""
+        self.client.post("/api/login", json={"username": "admin", "password": "admin12345"})
+
+        # 1. Alias route without /api prefix
+        res1 = self.client.post("/voice/process", data={"transcript": "Test audio voice check", "lang": "en"})
+        self.assertEqual(res1.status_code, 200)
+
+        # 2. Standard route with /api prefix
+        res2 = self.client.post("/api/voice/process", data={"transcript": "Test audio voice check", "lang": "en"})
+        self.assertEqual(res2.status_code, 200)
+
+        # 3. Duplicate prefix /api/api/ path handled by normalizer
+        res3 = self.client.post("/api/api/voice/process", data={"transcript": "Test audio voice check", "lang": "en"})
+        self.assertEqual(res3.status_code, 200)
+
+    def test_ai_description_generation_engine(self):
+        """Module 3 Verification: Professional description generation for fleet engineering."""
+        from src.services.voice_translation_service import generate_professional_description
+
+        # Brakes
+        desc_brake = generate_professional_description("Vehicle brakes making grinding noise, check required", lang="en")
+        self.assertIn("brake", desc_brake.lower())
+        self.assertIn("inspection", desc_brake.lower())
+
+        # Overheating
+        desc_heat = generate_professional_description("Engine temperature is extremely high with steam", lang="en")
+        self.assertIn("thermal", desc_heat.lower())
+
+        # Fluid leakage
+        desc_leak = generate_professional_description("Hydraulic oil leaking under the chassis", lang="en")
+        self.assertIn("leakage", desc_leak.lower())
+
+    def test_audio_file_persistence_and_retrieval(self):
+        """Module 4 Verification: Audio file permanent persistence, database metadata, and retrieval."""
+        import io
+        self.client.post("/api/login", json={"username": "admin", "password": "admin12345"})
+
+        fake_audio = io.BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00data\x00\x00\x00\x00")
+        res = self.client.post("/api/voice/process", data={
+            "audio": (fake_audio, "driver_report.wav"),
+            "transcript": "Front axle unusual noise during operation",
+            "lang": "en",
+            "duration": 4.5,
+            "module": "complaint"
+        }, content_type="multipart/form-data")
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        doc_id = data.get("doc_id")
+        self.assertIsNotNone(doc_id)
+        self.assertIsNotNone(data.get("stored_filename"))
+        self.assertEqual(data.get("duration"), 4.5)
+
+        # Retrieve file via /api/files/<doc_id>
+        file_res = self.client.get(f"/api/files/{doc_id}")
+        self.assertEqual(file_res.status_code, 200)
+        self.assertGreater(len(file_res.data), 0)
+
+    def test_complaint_and_work_order_with_voice_integration(self):
+        """Module 5 & 4: Link voice audio and AI description directly to business records."""
+        self.client.post("/api/login", json={"username": "admin", "password": "admin12345"})
+
+        # 1. First process voice
+        voice_res = self.client.post("/api/voice/process", data={
+            "transcript": "गाड़ी में ब्रेक की समस्या है और इसकी जांच करनी है।",
+            "lang": "hi",
+            "module": "complaint"
+        })
+        self.assertEqual(voice_res.status_code, 200)
+        vdata = json.loads(voice_res.data)
+        doc_id = vdata.get("doc_id")
+
+        # 2. Get registered asset
+        assets_res = self.client.get("/api/assets")
+        self.assertEqual(assets_res.status_code, 200)
+        assets = json.loads(assets_res.data)
+        self.assertTrue(len(assets) > 0)
+        aid = assets[0]["id"]
+
+        # 3. Create complaint with voice metadata
+        comp_res = self.client.post("/api/complaints", data={
+            "asset_id": aid,
+            "category": "Brake Problem",
+            "description": vdata["english_translation"],
+            "ai_description": vdata["ai_description"],
+            "voice_doc_id": doc_id or "",
+            "original_lang": vdata["detected_lang"],
+            "original_transcript": vdata["original_transcript"],
+            "priority": "High"
+        })
+        self.assertEqual(comp_res.status_code, 200)
+        cdata = json.loads(comp_res.data)
+        self.assertIn("CMP-", cdata["code"])
+
+        # 4. Verify complaint list contains complaint with audio_id
+        list_res = self.client.get("/api/complaints")
+        self.assertEqual(list_res.status_code, 200)
+        complaints = json.loads(list_res.data)
+        found = next((c for c in complaints if c["id"] == cdata["id"]), None)
+        self.assertIsNotNone(found)
+        self.assertIn("brake", found["description"].lower())
+        self.assertIn("brake", found["ai_description"].lower())
 
     def test_purchase_document_validation(self):
         """Test purchase document file validation: allowed formats (.pdf, .jpg, .jpeg, .png, .webp)."""

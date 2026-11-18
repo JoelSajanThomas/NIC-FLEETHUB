@@ -2,7 +2,7 @@
 Modular, scalable Python Flask service with SQLite database engine.
 """
 import os, sys
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify, request
 
 # Ensure source, backend, and project root are on sys.path
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -48,12 +48,32 @@ def create_app():
     register_error_handlers(app)
     init_cors(app)
 
+    # WSGI Route normalizer: eliminate duplicate /api/api/ path issues from misconfigured clients
+    class PathPrefixNormalizer:
+        def __init__(self, wsgi_app):
+            self.wsgi_app = wsgi_app
+        def __call__(self, environ, start_response):
+            path = environ.get('PATH_INFO', '')
+            if path.startswith('/api/api/'):
+                environ['PATH_INFO'] = path.replace('/api/api/', '/api/', 1)
+            return self.wsgi_app(environ, start_response)
+
+    app.wsgi_app = PathPrefixNormalizer(app.wsgi_app)
+
     # Routes
     register_routes(app)
 
-    # API 404 Fallback
+    # API 404 Fallback with duplicate /api/ routing recovery
     @app.route("/api/<path:p>", methods=["GET", "POST", "PUT", "DELETE"])
     def api_404(p):
+        if p.startswith("api/"):
+            subpath = p[4:]
+            try:
+                adapter = app.url_map.bind_to_environ(request.environ)
+                endpoint, args = adapter.match("/api/" + subpath, method=request.method)
+                return app.view_functions[endpoint](**args)
+            except Exception:
+                pass
         raise Bad("Unknown API route", 404)
 
     # Static UI Serving for unified deployment

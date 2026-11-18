@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request, session
 from ..database.connection import one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need, can
-from ..services.voice_translation_service import translate_text
+from ..services.voice_translation_service import translate_text, generate_professional_description
 from .asset_controller import save_file
 from ..utils.helpers import P, now
 
@@ -27,6 +27,7 @@ NEXT = {
 MANAGE_ONLY = {"Approved", "Rejected", "Assigned", "Cancelled", "Inspection Approved", "Released"}
 
 @work_order_bp.post("/api/work-orders")
+@work_order_bp.post("/work-orders")
 @need("wo.manage")
 def wo_new():
     p = P()
@@ -34,6 +35,7 @@ def wo_new():
     orig_text = (p.get("original_transcript") or "").strip()
     orig_lang = (p.get("original_lang") or "").strip().lower() or None
     voice_id = int(p["voice_doc_id"]) if p.get("voice_doc_id") else None
+    ai_desc = (p.get("ai_description") or "").strip()
     with tx() as c:
         pri = p.get("priority") if p.get("priority") in PRI else "Normal"
         desc = (p.get("description") or "").strip()
@@ -45,32 +47,38 @@ def wo_new():
             voice_id = voice_id or cm["voice_doc_id"]
             orig_text = orig_text or cm["original_transcript"]
             orig_lang = orig_lang or cm["original_lang"]
+            ai_desc = ai_desc or cm.get("ai_description") or ""
             c.execute("UPDATE complaints SET status='Work Order Created' WHERE id=?", (cid,))
         else:
             aid = int(p.get("asset_id") or 0)
         if not c.execute("SELECT 1 FROM assets WHERE id=?", (aid,)).fetchone():
             raise Bad("Choose a registered asset")
         if not desc and orig_text:
-            desc, det = translate_text(orig_text, target="en")
+            desc, det, _ = translate_text(orig_text, target="en")
             orig_lang = orig_lang or det
         if not desc: raise Bad("Describe the work")
+        if not ai_desc:
+            ai_desc = generate_professional_description(desc, lang=orig_lang or "en", module="work_order")
         is_d_row = c.execute("SELECT is_demo FROM assets WHERE id=?", (aid,)).fetchone()
         is_demo_val = 1 if (is_d_row and is_d_row[0]) else 0
         cur = c.execute(
-            "INSERT INTO work_orders(asset_id,complaint_id,category,description,priority,assignee,voice_doc_id,original_lang,original_transcript,created_by,is_demo,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-            (aid, cid, p.get("category") or "Repair", desc, pri, p.get("assignee") or None, voice_id, orig_lang if orig_lang and orig_lang != "en" else None, orig_text if orig_text and orig_text != desc else None, session["name"], is_demo_val, now())
+            "INSERT INTO work_orders(asset_id,complaint_id,category,description,priority,assignee,voice_doc_id,original_lang,original_transcript,ai_description,created_by,is_demo,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (aid, cid, p.get("category") or "Repair", desc, pri, p.get("assignee") or None, voice_id, orig_lang if orig_lang and orig_lang != "en" else None, orig_text if orig_text and orig_text != desc else None, ai_desc, session["name"], is_demo_val, now())
         )
         code = f"WO-{cur.lastrowid:05d}"
         c.execute("UPDATE work_orders SET code=? WHERE id=?", (code, cur.lastrowid))
+        if voice_id:
+            c.execute("UPDATE documents SET wo_id=?, ai_description=? WHERE id=?", (cur.lastrowid, ai_desc, voice_id))
         audit("create", "work order", code, desc[:80])
         notify("workshop", f"New work order {code}", f"{desc[:60]} ({pri})", kind="wo", link="#wo")
     return jsonify(id=cur.lastrowid, code=code)
 
 @work_order_bp.get("/api/work-orders")
+@work_order_bp.get("/work-orders")
 @need("wo.view")
 def wo_list():
     sql = """SELECT w.*, a.code asset_code, a.name asset_name,
-                    COALESCE(w.voice_doc_id, (SELECT id FROM documents d WHERE d.wo_id=w.id AND d.kind = 'Voice recording' LIMIT 1)) audio_id
+                    COALESCE(w.voice_doc_id, (SELECT id FROM documents d WHERE d.wo_id=w.id AND (d.kind LIKE 'Voice%' OR d.mime LIKE 'audio%') LIMIT 1)) audio_id
              FROM work_orders w JOIN assets a ON a.id=w.asset_id WHERE 1=1"""
     args = []
     if request.args.get("open"):

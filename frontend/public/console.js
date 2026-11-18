@@ -374,7 +374,10 @@ const toast = msg => {
 };
 
 async function api(p, o) {
-  const r = await fetch("/api" + p, { credentials: "same-origin", ...o });
+  let cleanPath = p.startsWith("/api/") ? p.substring(4) : (p.startsWith("/api") ? p.substring(4) : p);
+  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+  const baseUrl = window.FLEETHUB_API_BASE || "";
+  const r = await fetch(baseUrl + "/api" + cleanPath, { credentials: "include", ...o });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     if (r.status === 401 && ME) { ME = null; boot(); }
@@ -453,21 +456,28 @@ function setupVoiceRecorder(targetName, container) {
     <div id="vStatus" style="font-size:.8rem;color:var(--mu)">${t("voice_instruction")}</div>
 
     <div id="vPreview" style="display:none;margin-top:.5rem" class="voice-preview-card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span id="vLangBadge" class="voice-status-badge" style="background:#e0f2fe;color:#0369a1">Detected: English</span>
-        <span style="font-size:.75rem;color:var(--mu)">Review and edit English text before saving</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem">
+        <div style="display:flex;align-items:center;gap:.35rem">
+          <span id="vLangBadge" class="voice-status-badge" style="background:#e0f2fe;color:#0369a1">Detected: English</span>
+          <span id="vDurationBadge" class="chip" style="font-size:.7rem;padding:.1rem .4rem;display:none"></span>
+        </div>
+        <span style="font-size:.75rem;color:var(--mu)">AI description generated · Review and edit</span>
       </div>
       <audio id="vAudioPlayer" controls style="width:100%;height:2.25rem"></audio>
       <div id="vOrigBox">
         <b>${t("voice_orig")}</b>
         <div id="vOrigText" style="padding:.4rem .6rem;background:#f8fafc;border-radius:.4rem;border:1px solid #e2e8f0;color:#333;font-size:.85rem"></div>
       </div>
-      <div id="vTransBox">
-        <b style="color:#15803d">${t("voice_trans")}</b>
-        <textarea id="vTransInput" class="voice-review-edit" rows="3" placeholder="English translation will appear here..."></textarea>
+      <div id="vTransBox" style="display:none">
+        <b style="color:#1e40af">English Translation:</b>
+        <div id="vTransText" style="padding:.4rem .6rem;background:#eff6ff;border-radius:.4rem;border:1px solid #bfdbfe;color:#1e3a8a;font-size:.85rem"></div>
+      </div>
+      <div id="vDescBox">
+        <b style="color:#15803d">🤖 AI-Generated Description / Note:</b>
+        <textarea id="vTransInput" class="voice-review-edit" rows="3" placeholder="AI professional description will appear here..."></textarea>
       </div>
       <div class="voice-actions">
-        <button type="button" class="voice-btn-apply" id="vBtnApply">${t("voice_apply")}</button>
+        <button type="button" class="voice-btn-apply" id="vBtnApply">✓ Apply to Form</button>
         <button type="button" class="btn g sm" id="vBtnReRec">${t("voice_rerecord")}</button>
         <button type="button" class="btn g sm" id="vBtnDiscard">${t("voice_discard")}</button>
       </div>
@@ -486,7 +496,10 @@ function setupVoiceRecorder(targetName, container) {
   const vPreview = widget.querySelector("#vPreview");
   const vAudio = widget.querySelector("#vAudioPlayer");
   const vLangBadge = widget.querySelector("#vLangBadge");
+  const vDurationBadge = widget.querySelector("#vDurationBadge");
   const vOrigText = widget.querySelector("#vOrigText");
+  const vTransBox = widget.querySelector("#vTransBox");
+  const vTransText = widget.querySelector("#vTransText");
   const vTransInput = widget.querySelector("#vTransInput");
 
   // Language pill selector
@@ -510,20 +523,35 @@ function setupVoiceRecorder(targetName, container) {
     }
     fd.append("transcript", initialTranscript);
     fd.append("lang", activeLang === "auto" ? CUR_LANG : activeLang);
+    fd.append("duration", VOICE_STATE.seconds || 0);
+    fd.append("module", targetName === "remarks" ? "asset" : (targetName === "note" ? "work_order" : "complaint"));
+    fd.append("field_name", targetName);
 
     try {
       vStatus.textContent = t("voice_translating");
-      const res = await post("/api/voice/process", fd);
+      const res = await post("/voice/process", fd);
       vStatus.textContent = t("voice_success");
       vPreview.style.display = "grid";
 
       const origText = res.original_transcript || initialTranscript || "(Spoken audio captured)";
       const engText = res.english_translation || res.original_transcript || "";
+      const aiDesc = res.ai_description || engText;
       const detLang = res.detected_lang || "en";
       const detLangName = res.detected_lang_name || (detLang === "hi" ? "Hindi" : (detLang === "ar" ? "Arabic" : "English"));
 
       vOrigText.textContent = origText;
-      vTransInput.value = engText;
+      if (detLang !== "en" && engText && engText !== origText) {
+        vTransBox.style.display = "block";
+        vTransText.textContent = engText;
+      } else {
+        vTransBox.style.display = "none";
+      }
+      vTransInput.value = aiDesc;
+
+      if (res.duration && res.duration > 0) {
+        vDurationBadge.style.display = "inline-flex";
+        vDurationBadge.textContent = `⏱️ ${Math.round(res.duration)}s`;
+      }
 
       vLangBadge.textContent = `Detected: ${detLangName} (${detLang.toUpperCase()})`;
       if (detLang === "hi") {
@@ -537,10 +565,11 @@ function setupVoiceRecorder(targetName, container) {
         vLangBadge.style.color = "#166534";
       }
 
-      // Automatically fill the target input as initial suggestion
+      // Automatically fill the target input with AI description
       const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
-      if (formInput && engText) {
-        formInput.value = engText;
+      if (formInput && aiDesc) {
+        formInput.value = aiDesc;
+        formInput.dispatchEvent(new Event("input", { bubbles: true }));
       }
 
       // Save hidden fields
@@ -561,6 +590,15 @@ function setupVoiceRecorder(targetName, container) {
         container.append(hTrans);
       }
       hTrans.value = origText;
+
+      let hDesc = container.querySelector('input[name="ai_description"]');
+      if (!hDesc) {
+        hDesc = document.createElement("input");
+        hDesc.type = "hidden";
+        hDesc.name = "ai_description";
+        container.append(hDesc);
+      }
+      hDesc.value = aiDesc;
 
       let hVoice = container.querySelector('input[name="voice_doc_id"]');
       if (!hVoice) {
@@ -584,7 +622,9 @@ function setupVoiceRecorder(targetName, container) {
       formInput.focus();
       formInput.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    vStatus.textContent = "✓ Applied English text to form.";
+    let hDesc = container.querySelector('input[name="ai_description"]');
+    if (hDesc) hDesc.value = vTransInput.value;
+    vStatus.textContent = "✓ Applied description to form.";
   };
 
   // Discard button handler
@@ -794,7 +834,7 @@ function setupDocumentAutoFill(formContainer, fileInput, docContext = "purchase"
 
     try {
       stepOcr.className = "doc-ai-step active";
-      const res = await post("/api/documents/scan-autofill", fd);
+      const res = await post("/documents/scan-autofill", fd);
 
       // Language step
       stepLang.className = "doc-ai-step done";
@@ -982,9 +1022,9 @@ const tbl = (cols, data, act) => data.length ? `
 ` : `<p class="mu" style="padding:1.5rem 0">No records found.</p>`;
 
 const B = (a, id, l, x = "") => `<button class="btn g sm" data-a="${a}" data-id="${id}" ${x}>${l}</button>`;
-const bill = id => id ? `<a href="/api/files/${id}" target="_blank" rel="noopener" class="chip c-verified">View Bill</a>` : `<span class="mu">-</span>`;
-const docLink = id => id ? `<a href="/api/files/${id}" target="_blank" rel="noopener" class="chip c-verified">View Doc</a>` : `<span class="mu">-</span>`;
-const audioPlayer = id => id ? `<audio src="/api/files/${id}" controls style="height:1.75rem;max-width:11rem;vertical-align:middle"></audio>` : `<span class="mu">-</span>`;
+const bill = id => id ? `<a href="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}" target="_blank" rel="noopener" class="chip c-verified">View Bill</a>` : `<span class="mu">-</span>`;
+const docLink = id => id ? `<a href="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}" target="_blank" rel="noopener" class="chip c-verified">View Doc</a>` : `<span class="mu">-</span>`;
+const audioPlayer = id => id ? `<div style="display:inline-flex;align-items:center;gap:.3rem"><audio src="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}" controls style="height:1.75rem;max-width:11rem;vertical-align:middle"></audio><a href="${(window.FLEETHUB_API_BASE || '')}/api/files/${id}?dl=1" title="Download audio recording" download class="chip" style="font-size:.7rem;padding:.15rem .35rem;text-decoration:none">💾</a></div>` : `<span class="mu">-</span>`;
 const opts = (a, v, l, none) => (none ? [["", none]] : []).concat(a.map(r => [r[v], l(r)]));
 const aOpts = async (mine) => opts(await api(mine ? "/my-assets" : "/assets"), "id", a => `${a.code} · ${a.name}${a.reg_no ? " · " + a.reg_no : ""}`);
 const woOpts = async none => opts(await api("/work-orders?open=1"), "id", w => `${w.code} · ${w.asset_code} · ${w.description.slice(0, 40)}`, none);
@@ -1362,6 +1402,7 @@ V.comp = async () => {
       ["category", "Type"],
       ["description", "Description (English)", r => `
         <div>${esc(r.description || "")}</div>
+        ${r.ai_description && r.ai_description !== r.description ? `<div style="font-size:.78rem;color:#15803d;margin-top:.2rem"><b>AI Note:</b> ${esc(r.ai_description)}</div>` : ""}
         ${r.original_transcript ? `<div style="font-size:.78rem;color:var(--mu);margin-top:.25rem"><span class="chip c-verified" style="font-size:.7rem;padding:.05rem .35rem">${esc((r.original_lang || "Voice").toUpperCase())}</span> <i>${esc(r.original_transcript)}</i></div>` : ""}
       `],
       ["location", "Location"],
@@ -1395,6 +1436,7 @@ V.wo = async () => {
       ["category", "Category"],
       ["description", "Work Description (English)", r => `
         <div>${esc(r.description || "")}</div>
+        ${r.ai_description && r.ai_description !== r.description ? `<div style="font-size:.78rem;color:#15803d;margin-top:.2rem"><b>AI Note:</b> ${esc(r.ai_description)}</div>` : ""}
         ${r.original_transcript ? `<div style="font-size:.78rem;color:var(--mu);margin-top:.25rem"><span class="chip c-verified" style="font-size:.7rem;padding:.05rem .35rem">${esc((r.original_lang || "Voice").toUpperCase())}</span> <i>${esc(r.original_transcript)}</i></div>` : ""}
       `],
       ["priority", t("priority"), r => chip(r.priority)],
@@ -2774,7 +2816,7 @@ function shell() {
       CUR_LANG = ls.value;
       localStorage.setItem("fleethub_lang", CUR_LANG);
       applyLanguageLayout();
-      await post("/api/user/lang", { lang: CUR_LANG }).catch(() => {});
+      await post("/user/lang", { lang: CUR_LANG }).catch(() => {});
       shell();
       refresh();
     };

@@ -2,11 +2,22 @@
 from flask import request
 from ..config import config
 
+def is_origin_allowed(origin):
+    if not origin:
+        return False
+    if "*" in config.CORS_ORIGINS or origin in config.CORS_ORIGINS:
+        return True
+    if origin.endswith(".vercel.app") or origin.endswith(".onrender.com"):
+        return True
+    if origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:"):
+        return True
+    return False
+
 def init_cors(app):
     @app.after_request
     def apply_cors_headers(response):
         origin = request.headers.get("Origin")
-        if origin and (origin in config.CORS_ORIGINS or "*" in config.CORS_ORIGINS):
+        if origin and is_origin_allowed(origin):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"

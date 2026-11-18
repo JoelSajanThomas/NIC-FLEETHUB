@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://nic-fleethub.onrender.com/api/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://nic-fleethub.onrender.com/uploads/$1"
+    },
+    {
+      "source": "/app",
+      "destination": "/frontend/public/index.html"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/frontend/public/assets/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/public/$1"
+    }
+  ]
+}

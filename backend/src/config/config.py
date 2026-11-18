@@ -42,7 +42,9 @@ MAX_CONTENT_LENGTH = 25 * 1024 * 1024  # 25 MB
 
 # Session config
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
+IS_PROD_DEPLOY = bool(os.environ.get("RENDER") or os.environ.get("VERCEL") or os.environ.get("PROD") or os.environ.get("PRODUCTION"))
+SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "None" if IS_PROD_DEPLOY else "Lax")
+SESSION_COOKIE_SECURE = True if (IS_PROD_DEPLOY or os.environ.get("COOKIE_SECURE", "0") == "1") else False
 PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
 # Regional defaults
