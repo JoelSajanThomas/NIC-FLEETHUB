@@ -377,10 +377,17 @@ const toast = msg => {
 async function api(p, o) {
   let cleanPath = p.startsWith("/api/") ? p.substring(4) : (p.startsWith("/api") ? p.substring(4) : p);
   if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-  const r = await fetch(API_BASE + "/api" + cleanPath, { credentials: "include", ...o });
+  const token = localStorage.getItem("fleethub_token");
+  const headers = { ...(o?.headers || {}) };
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const r = await fetch(API_BASE + "/api" + cleanPath, { credentials: "include", ...o, headers });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
-    if (r.status === 401 && ME) { ME = null; boot(); }
+    if (r.status === 401 && ME) {
+      localStorage.removeItem("fleethub_token");
+      ME = null;
+      boot();
+    }
     throw Error(j.error || r.statusText || "Request failed");
   }
   return j;
@@ -1991,6 +1998,7 @@ ACT.back = () => {
   go(h[0], h[1]);
 };
 ACT.out = async () => {
+  localStorage.removeItem("fleethub_token");
   await post("/logout");
   ME = null;
   boot();
@@ -2972,6 +2980,9 @@ function loginView() {
     e.preventDefault();
     try {
       ME = await post("/login", fj(new FormData(e.target)));
+      if (ME.token) {
+        localStorage.setItem("fleethub_token", ME.token);
+      }
       if (ME.lang) {
         CUR_LANG = ME.lang;
         localStorage.setItem("fleethub_lang", CUR_LANG);

@@ -1,7 +1,9 @@
 """Authentication and authorization middleware matching Fleethub permissions."""
 import functools
-from flask import session
+from flask import session, request
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from .error_middleware import Bad
+from ..config import config
 
 ROLES = {
     "super_admin": "*",
@@ -17,8 +19,33 @@ ROLES = {
     "management": {"asset.view", "wo.view", "inventory.view", "expense.view", "report.view", "purchase.approve", "historical.view"},
 }
 
+def get_auth_serializer():
+    return URLSafeTimedSerializer(config.SECRET_KEY, salt="fleethub-auth")
+
+def issue_token(data):
+    """Generate signed bearer token valid for 7 days."""
+    return get_auth_serializer().dumps(data)
+
+def verify_token(token):
+    """Verify signed bearer token."""
+    try:
+        return get_auth_serializer().loads(token, max_age=86400 * 7)
+    except (BadSignature, SignatureExpired, Exception):
+        return None
+
+def check_bearer_auth():
+    """Extract session data from Authorization: Bearer token if session cookie is absent."""
+    if "uid" not in session:
+        auth_hdr = request.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            raw = auth_hdr[7:].strip()
+            t_data = verify_token(raw)
+            if t_data and isinstance(t_data, dict) and "uid" in t_data:
+                session.update(t_data)
+
 def can(p):
     """Check whether active session role has permission p."""
+    check_bearer_auth()
     role = session.get("role")
     s = ROLES.get(role, set())
     if s == "*": return True
@@ -39,6 +66,7 @@ def need(p):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+            check_bearer_auth()
             if "uid" not in session:
                 raise Bad("Sign in required", 401)
             if p and not can(p):
@@ -49,6 +77,7 @@ def need(p):
 
 def get_current_user():
     """Retrieve current session user information."""
+    check_bearer_auth()
     if "uid" not in session:
         return None
     return {

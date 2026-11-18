@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, session
 from werkzeug.security import check_password_hash
 from ..database.connection import one, tx, audit
 from ..middleware.error_middleware import Bad
-from ..middleware.auth_middleware import need, ROLES
+from ..middleware.auth_middleware import need, ROLES, issue_token
 from ..utils.helpers import P
 
 auth_bp = Blueprint("auth", __name__)
@@ -46,13 +46,22 @@ def me():
     role = session.get("role", "")
     s = ROLES.get(role, set())
     u = one("SELECT preferred_lang FROM users WHERE id=?", (session["uid"],)) or {}
+    user_lang = u.get("preferred_lang") or session.get("lang") or "en"
+    token = issue_token({
+        "uid": session["uid"],
+        "username": session.get("username"),
+        "name": session.get("name"),
+        "role": role,
+        "lang": user_lang
+    })
     return jsonify(
         id=session["uid"],
         username=session.get("username"),
         name=session.get("name"),
         role=role,
         perms=["*"] if s == "*" else sorted(s),
-        lang=u.get("preferred_lang") or session.get("lang") or "en"
+        lang=user_lang,
+        token=token
     )
 
 @auth_bp.post("/api/user/lang")

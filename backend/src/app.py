@@ -48,6 +48,12 @@ def create_app():
     register_error_handlers(app)
     init_cors(app)
 
+    try:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    except Exception:
+        pass
+
     # WSGI Route normalizer: eliminate duplicate /api/api/ path issues from misconfigured clients
     class PathPrefixNormalizer:
         def __init__(self, wsgi_app):

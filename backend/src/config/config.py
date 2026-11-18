@@ -17,12 +17,14 @@ for d in (DATA_DIR, UPLOAD_DIR, BACKUP_DIR, os.path.join(UPLOAD_DIR, "documents"
     os.makedirs(d, exist_ok=True)
 
 # Secret key
-KEY_PATH = os.path.join(DATA_DIR, "secret.key")
-if not os.path.exists(KEY_PATH):
-    with open(KEY_PATH, "w", encoding="utf-8") as f:
-        f.write(secrets.token_hex(32))
-with open(KEY_PATH, "r", encoding="utf-8") as f:
-    SECRET_KEY = f.read().strip()
+SECRET_KEY = os.environ.get("FLEETHUB_SECRET") or os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    KEY_PATH = os.path.join(DATA_DIR, "secret.key")
+    if not os.path.exists(KEY_PATH):
+        with open(KEY_PATH, "w", encoding="utf-8") as f:
+            f.write(secrets.token_hex(32))
+    with open(KEY_PATH, "r", encoding="utf-8") as f:
+        SECRET_KEY = f.read().strip()
 
 # Network and Server
 PORT = int(os.environ.get("PORT", os.environ.get("FLEETHUB_PORT", 5000)))
@@ -43,7 +45,7 @@ MAX_CONTENT_LENGTH = 25 * 1024 * 1024  # 25 MB
 # Session config
 SESSION_COOKIE_HTTPONLY = True
 IS_PROD_DEPLOY = bool(os.environ.get("RENDER") or os.environ.get("VERCEL") or os.environ.get("PROD") or os.environ.get("PRODUCTION"))
-SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "None" if IS_PROD_DEPLOY else "Lax")
+SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
 SESSION_COOKIE_SECURE = True if (IS_PROD_DEPLOY or os.environ.get("COOKIE_SECURE", "0") == "1") else False
 PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
