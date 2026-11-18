@@ -1,5 +1,30 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)sw.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(js|css)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -11,6 +36,14 @@
     },
     {
       "source": "/app",
+      "destination": "/frontend/public/app.html"
+    },
+    {
+      "source": "/app/(.*)",
+      "destination": "/frontend/public/app.html"
+    },
+    {
+      "source": "/",
       "destination": "/frontend/public/index.html"
     },
     {
