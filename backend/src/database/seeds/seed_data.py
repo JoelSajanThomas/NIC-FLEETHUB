@@ -79,5 +79,11 @@ def seed_defaults():
                 (curr, rate, src, now())
             )
 
+    # 5. Populate Kuwait operational demo fleet if database is empty of assets
+    cur.execute("SELECT COUNT(*) FROM assets")
+    if cur.fetchone()[0] == 0:
+        from ...services.demo_service import load_demo_dataset
+        load_demo_dataset(cur)
+
     con.commit()
     con.close()

@@ -29,3 +29,15 @@ def register_error_handlers(app):
     @app.errorhandler(404)
     def handle_not_found(e):
         return jsonify(error="Resource or endpoint not found"), 404
+
+    @app.errorhandler(sqlite3.OperationalError)
+    def handle_operational_error(e):
+        import logging, traceback
+        logging.error("Database Operational Error: %s\n%s", str(e), traceback.format_exc())
+        return jsonify(error=f"Database operational error: {str(e)}"), 500
+
+    @app.errorhandler(Exception)
+    def handle_unhandled_exception(e):
+        import logging, traceback
+        logging.error("Unhandled Exception: %s\n%s", str(e), traceback.format_exc())
+        return jsonify(error=str(e), type=type(e).__name__), 500

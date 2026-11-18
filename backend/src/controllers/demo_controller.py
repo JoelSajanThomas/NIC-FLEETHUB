@@ -34,7 +34,7 @@ def demo_preview():
 def demo_load():
     with tx() as c:
         load_demo_dataset(c)
-        audit("load_demo_data", "demo", "0", "Loaded standard Kuwait fleet demo dataset")
+    audit("load_demo_data", "demo", "0", "Loaded standard Kuwait fleet demo dataset")
     notify_sync("demo_load")
     return jsonify(ok=True, message="Demo data loaded successfully.", status=get_demo_counts())
 
@@ -57,7 +57,8 @@ def demo_clear():
         with tx() as c:
             counts, deleted_files = clear_demo_dataset(c)
             total_deleted = sum(counts.values())
-            audit("clear_demo_data", "demo", "0", f"Permanently cleared {total_deleted} demo records and {deleted_files} files. Pre-cleanup backup: {backup_fn}")
+
+        audit("clear_demo_data", "demo", "0", f"Permanently cleared {total_deleted} demo records and {deleted_files} files. Pre-cleanup backup: {backup_fn}")
 
         notify_sync("demo_clear")
         return jsonify(

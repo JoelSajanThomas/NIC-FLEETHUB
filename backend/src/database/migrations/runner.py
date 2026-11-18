@@ -144,6 +144,16 @@ ALTER TABLE documents ADD COLUMN ai_description TEXT;
 
 ALTER TABLE complaints ADD COLUMN ai_description TEXT;
 ALTER TABLE work_orders ADD COLUMN ai_description TEXT;
+""",
+    # Migration 7: Demo flags on stock_tx, suppliers, notifications, and audit
+    """
+ALTER TABLE stock_tx ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE suppliers ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE notifications ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE audit ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS ix_stk_demo ON stock_tx(is_demo);
+CREATE INDEX IF NOT EXISTS ix_sup_demo ON suppliers(is_demo);
+CREATE INDEX IF NOT EXISTS ix_notif_demo ON notifications(is_demo);
 """
 ]
 
