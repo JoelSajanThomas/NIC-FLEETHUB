@@ -1,4 +1,5 @@
-"""External purchases and procurement controller."""
+"""External purchases, procurement, and document management controller."""
+import os
 from flask import Blueprint, jsonify, request, session
 from ..database.connection import one, rows, tx, audit, notify
 from ..middleware.error_middleware import Bad
@@ -7,8 +8,27 @@ from ..services.currency_service import convert_to_kwd
 from .asset_controller import save_file
 from .inventory_controller import stock_move
 from ..utils.helpers import P, now
+from ..config import config
 
 purchase_bp = Blueprint("purchases", __name__)
+
+ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_DOC_KINDS = {
+    "External Purchase Bill",
+    "Supplier Invoice",
+    "Purchase Receipt",
+    "Supporting Document",
+    "Purchase bill"
+}
+
+def validate_purchase_file(file_obj):
+    """Validate file presence, extension, and content size."""
+    if not file_obj or not file_obj.filename:
+        raise Bad("Please select a document or invoice file to upload", 400)
+    ext = os.path.splitext(file_obj.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise Bad(f"Unsupported file format '{ext}'. Allowed formats: PDF, JPG, JPEG, PNG, WEBP.", 400)
+    return ext
 
 @purchase_bp.post("/api/purchases")
 @need("purchase.create")
@@ -71,7 +91,16 @@ def pur_new():
 def pur_list():
     if not (can("purchase.create") or can("purchase.approve") or can("purchase.record")):
         raise Bad("Not permitted", 403)
-    return jsonify(rows("SELECT p.*, a.code asset_code, a.name asset_name, w.code wo_code, s.name supplier_name, (SELECT id FROM documents d WHERE d.purchase_id=p.id LIMIT 1) bill_id FROM purchases p LEFT JOIN assets a ON a.id=p.asset_id LEFT JOIN work_orders w ON w.id=p.wo_id LEFT JOIN suppliers s ON s.id=p.supplier_id ORDER BY p.id DESC LIMIT 500"))
+    return jsonify(rows("""
+        SELECT p.*, a.code asset_code, a.name asset_name, w.code wo_code, s.name supplier_name,
+               (SELECT id FROM documents d WHERE d.purchase_id=p.id ORDER BY d.id DESC LIMIT 1) bill_id,
+               (SELECT COUNT(*) FROM documents d WHERE d.purchase_id=p.id) doc_count
+        FROM purchases p
+        LEFT JOIN assets a ON a.id=p.asset_id
+        LEFT JOIN work_orders w ON w.id=p.wo_id
+        LEFT JOIN suppliers s ON s.id=p.supplier_id
+        ORDER BY p.id DESC LIMIT 500
+    """))
 
 @purchase_bp.post("/api/purchases/<int:i>/decide")
 @need("purchase.approve")
@@ -95,16 +124,22 @@ def pur_record(i):
     up = float(p.get("unit_price") or 0)
     f = request.files.get("bill")
     if up <= 0: raise Bad("Enter the actual unit price paid")
-    if not f or not f.filename: raise Bad("Upload the original bill or invoice (PDF, JPG or PNG)")
+    if not f or not f.filename: raise Bad("Upload the original bill, invoice, or receipt (PDF, JPG, PNG, WEBP)")
+    validate_purchase_file(f)
+
     currency = (p.get("currency") or "KWD").strip().upper()
     manual_rate = float(p.get("exchange_rate") or 0) if p.get("exchange_rate") else None
     up_kwd, rate_applied = convert_to_kwd(up, currency, manual_rate)
     sup_name = (p.get("supplier") or "").strip() or None
+    doc_kind = (p.get("doc_kind") or "External Purchase Bill").strip()
+    if doc_kind not in ALLOWED_DOC_KINDS:
+        doc_kind = "External Purchase Bill"
+
     with tx() as c:
         r = c.execute("SELECT * FROM purchases WHERE id=?", (i,)).fetchone()
         if not r: raise Bad("Not found", 404)
         if r["status"] != "Approved": raise Bad("Only approved requests can be recorded")
-        save_file(c, f, asset_id=r["asset_id"], wo_id=r["wo_id"], purchase_id=i, kind="Purchase bill")
+        doc_id = save_file(c, f, asset_id=r["asset_id"], wo_id=r["wo_id"], purchase_id=i, kind=doc_kind)
         c.execute("""UPDATE purchases SET status='Purchased', unit_price=?, invoice_no=?, supplier=COALESCE(?,supplier), purchased_at=?, currency=?, original_price=?, exchange_rate=?
                      WHERE id=?""",
                   (up_kwd, p.get("invoice_no"), sup_name, now(), currency, up if currency != "KWD" else None, rate_applied, i))
@@ -115,4 +150,50 @@ def pur_record(i):
                          VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
                       (r["asset_id"], r["wo_id"], "external_purchase", round(r["qty"] * up_kwd, 3), f"pur:{i}", f"{r['code']}: {r['qty']:g} x {r['part_name']}, invoice {p.get('invoice_no') or '-'}", session["name"], now(), currency, round(r["qty"] * up, 3) if currency != "KWD" else None, rate_applied))
         audit("record", "purchase", r["code"], f"unit {up_kwd} KWD ({up} {currency})")
-    return jsonify(ok=1)
+    return jsonify(ok=1, doc_id=doc_id)
+
+@purchase_bp.get("/api/purchases/<int:i>/documents")
+@need(None)
+def pur_docs_list(i):
+    """Retrieve all supporting documents and invoices attached to a purchase."""
+    if not (can("purchase.create") or can("purchase.approve") or can("purchase.record")):
+        raise Bad("Not permitted", 403)
+    docs = rows("""
+        SELECT id, kind, filename, mime, by, at
+        FROM documents
+        WHERE purchase_id = ?
+        ORDER BY id DESC
+    """, (i,))
+    return jsonify(docs)
+
+@purchase_bp.post("/api/purchases/<int:i>/documents")
+@need("purchase.record")
+def pur_doc_upload(i):
+    """Upload a bill, invoice, receipt, or supporting document to a purchase."""
+    f = request.files.get("file") or request.files.get("document")
+    validate_purchase_file(f)
+    kind = (request.form.get("kind") or "Supporting Document").strip()
+    if kind not in ALLOWED_DOC_KINDS:
+        kind = "Supporting Document"
+
+    with tx() as c:
+        p = c.execute("SELECT * FROM purchases WHERE id=?", (i,)).fetchone()
+        if not p: raise Bad("Purchase record not found", 404)
+        doc_id = save_file(c, f, asset_id=p["asset_id"], wo_id=p["wo_id"], purchase_id=i, kind=kind)
+        audit("upload", "purchase", p["code"], f"{kind}: {f.filename}")
+    return jsonify(ok=True, doc_id=doc_id, message="Document uploaded successfully.")
+
+@purchase_bp.delete("/api/purchases/<int:i>/documents/<int:doc_id>")
+@need("purchase.record")
+def pur_doc_delete(i, doc_id):
+    """Delete an uploaded document from a purchase."""
+    with tx() as c:
+        doc = c.execute("SELECT * FROM documents WHERE id=? AND purchase_id=?", (doc_id, i)).fetchone()
+        if not doc: raise Bad("Document not found", 404)
+        fpath = os.path.join(config.UPLOAD_DIR, doc["stored"])
+        if os.path.exists(fpath):
+            try: os.remove(fpath)
+            except Exception: pass
+        c.execute("DELETE FROM documents WHERE id=?", (doc_id,))
+        audit("delete", "purchase_doc", i, f"Deleted document {doc['filename']}")
+    return jsonify(ok=True, message="Document removed.")

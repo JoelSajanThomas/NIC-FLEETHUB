@@ -74,20 +74,25 @@ const I18N = {
     recent_operations: "Recent Maintenance Operations",
     view_alert_center: "View Alert Center →",
     attention_req: "Attention Required:",
-    // Voice
-    voice_rec: "🎙️ Voice Record (العربية / हिन्दी / English)",
+    // Voice - Strictly English, Hindi, Arabic -> English
+    voice_rec: "🎙️ Multilingual Voice Recognition (English / हिन्दी / العربية)",
     voice_start: "🎙️ Start Voice Recording",
-    voice_stop: "⏹️ Stop & Translate",
+    voice_stop: "⏹️ Stop & Process",
     voice_pause: "⏸️ Pause",
     voice_resume: "▶️ Resume",
     voice_rerecord: "🔄 Re-record",
+    voice_discard: "✕ Discard",
+    voice_apply: "✓ Apply English to Form",
     voice_upload: "📁 Upload Audio",
-    voice_instruction: "Speak in Arabic, Hindi or English. The software automatically transcribes and translates your voice directly into English.",
-    voice_rec_active: "🔴 Recording... Speak in Arabic, Hindi or English",
-    voice_processing: "Translating to English...",
-    voice_success: "Audio recorded and translated to English successfully!",
-    voice_orig: "Original Transcript:",
-    voice_trans: "English Translation (Inserted into form):",
+    voice_instruction: "Speak in English, Hindi, or Arabic. The system automatically detects the language and converts Hindi & Arabic into clear English.",
+    voice_rec_active: "🔴 Recording in progress... Speak now in English, Hindi or Arabic",
+    voice_processing: "Processing speech & detecting language...",
+    voice_translating: "Translating to English...",
+    voice_success: "Transcription & English translation completed.",
+    voice_failed: "Speech recognition failed. Please try again.",
+    voice_orig: "Spoken Original Transcript:",
+    voice_trans: "English Translation (Editable Review):",
+    voice_detected_lang: "Detected Language:",
     // Status Chips
     st_active: "Active",
     st_under_repair: "Under Repair",
@@ -171,19 +176,24 @@ const I18N = {
     recent_operations: "हालिया रखरखाव गतिविधियां",
     view_alert_center: "अलर्ट केंद्र देखें →",
     attention_req: "ध्यान देने योग्य:",
-    voice_rec: "🎙️ बोलकर दर्ज करें (हिन्दी / العربية / English)",
+    voice_rec: "🎙️ बहुभाषी वॉइस पहचान (English / हिन्दी / العربية)",
     voice_start: "🎙️ रिकॉर्डिंग शुरू करें",
     voice_stop: "⏹️ रोकें एवं अनुवाद करें",
     voice_pause: "⏸️ रोकें",
     voice_resume: "▶️ जारी रखें",
     voice_rerecord: "🔄 पुनः रिकॉर्ड करें",
+    voice_discard: "✕ रद्द करें",
+    voice_apply: "✓ अंग्रेजी अनुवाद फॉर्म में लागू करें",
     voice_upload: "📁 ऑडियो अपलोड करें",
-    voice_instruction: "हिन्दी, अरबी या अंग्रेजी में बोलें। सॉफ्टवेयर आपकी आवाज का स्वतः अंग्रेजी में अनुवाद कर फॉर्म में दर्ज करेगा।",
-    voice_rec_active: "🔴 रिकॉर्डिंग चालू... हिन्दी, अरबी या अंग्रेजी में बोलें",
-    voice_processing: "अंग्रेजी में अनुवाद हो रहा है...",
-    voice_success: "आवाज सफलतापूर्वक रिकॉर्ड हुई और अंग्रेजी में अनुवादित हो गई!",
-    voice_orig: "मूल आवाज विवरण:",
-    voice_trans: "अंग्रेजी अनुवाद (फॉर्म में दर्ज):",
+    voice_instruction: "हिन्दी, अरबी या अंग्रेजी में बोलें। सॉफ्टवेयर आपकी आवाज का स्वतः अंग्रेजी में अनुवाद करेगा।",
+    voice_rec_active: "🔴 रिकॉर्डिंग चालू... बोलें",
+    voice_processing: "भाषा की पहचान की जा रही है...",
+    voice_translating: "अंग्रेजी में अनुवाद हो रहा है...",
+    voice_success: "ट्रांसक्रिप्शन एवं अंग्रेजी अनुवाद पूर्ण।",
+    voice_failed: "पहचान विफल रही। कृपया पुनः प्रयास करें।",
+    voice_orig: "बोला गया मूल विवरण:",
+    voice_trans: "अंग्रेजी अनुवाद (समीक्षा एवं संपादन):",
+    voice_detected_lang: "पहचानी गई भाषा:",
     st_active: "सक्रिय",
     st_under_repair: "मरम्मत में",
     st_out_of_service: "बंद",
@@ -266,19 +276,24 @@ const I18N = {
     recent_operations: "أحدث عمليات الورشة",
     view_alert_center: "عرض مركز التنبيهات ←",
     attention_req: "ملاحظات هامة تتطلب تدخلاً:",
-    voice_rec: "🎙️ تسجيل صوتي (العربية / हिन्दी / English)",
+    voice_rec: "🎙️ التعرف الصوتي الذكي (English / العربية / हिन्दी)",
     voice_start: "🎙️ بدء التسجيل الصوتي",
-    voice_stop: "⏹️ إيقاف وترجمة للإنجليزية",
+    voice_stop: "⏹️ إنهاء ومعالجة الصوت",
     voice_pause: "⏸️ إيقاف مؤقت",
     voice_resume: "▶️ استئناف",
     voice_rerecord: "🔄 إعادة التسجيل",
+    voice_discard: "✕ إلغاء",
+    voice_apply: "✓ تطبيق النص الإنجليزي في النموذج",
     voice_upload: "📁 رفع ملف صوتي",
-    voice_instruction: "تحدث بالعربية أو الهندية أو الإنجليزية. يقوم البرنامج تلقائياً بالتعرف على الصوت وترجمته فورياً للإنجليزية وإدراجه في النموذج.",
-    voice_rec_active: "🔴 جاري التسجيل... تحدث بالعربية أو الهندية أو الإنجليزية",
-    voice_processing: "جاري الترجمة الفورية إلى الإنجليزية...",
-    voice_success: "تم حفظ التسجيل الصوتي وترجمته فورياً للإنجليزية!",
+    voice_instruction: "تحدث بالعربية أو الإنجليزية أو الهندية. يتعرف النظام تلقائياً على اللغة ويترجم العربية والهندية مباشرة إلى إنجليزية واضحة.",
+    voice_rec_active: "🔴 جاري التسجيل الصوتي... تحدث الآن",
+    voice_processing: "جاري تحليل الصوت وتحديد اللغة...",
+    voice_translating: "جاري الترجمة الفورية إلى الإنجليزية...",
+    voice_success: "اكتمل التعرف والترجمة إلى الإنجليزية بنجاح.",
+    voice_failed: "فشل التعرف على الصوت. يرجى المحاولة مجدداً.",
     voice_orig: "النص المنطوق الأصلي:",
-    voice_trans: "الترجمة الإنجليزية (المسجلة في النموذج):",
+    voice_trans: "الترجمة الإنجليزية (مراجعة وتعديل):",
+    voice_detected_lang: "اللغة المكتشفة تلقائياً:",
     st_active: "نشط بالخدمة",
     st_under_repair: "تحت الإصلاح",
     st_out_of_service: "متوقف",
@@ -384,6 +399,8 @@ let VOICE_STATE = {
 
 function setupVoiceRecorder(targetName, container) {
   if (!container) return;
+  let activeLang = "auto"; // "auto", "en", "hi", "ar"
+
   const widget = document.createElement("div");
   widget.className = "voice-box";
   widget.innerHTML = `
@@ -399,15 +416,36 @@ function setupVoiceRecorder(targetName, container) {
         </label>
       </div>
     </div>
+    
+    <div class="voice-lang-tuner">
+      <span style="font-size:.75rem;font-weight:600;color:var(--mu);margin-right:.25rem">Language:</span>
+      <button type="button" class="voice-lang-pill active" data-lang="auto">⚡ Auto-Detect</button>
+      <button type="button" class="voice-lang-pill" data-lang="en">English</button>
+      <button type="button" class="voice-lang-pill" data-lang="hi">हिन्दी (Hindi)</button>
+      <button type="button" class="voice-lang-pill" data-lang="ar">العربية (Arabic)</button>
+    </div>
+
     <div id="vStatus" style="font-size:.8rem;color:var(--mu)">${t("voice_instruction")}</div>
+
     <div id="vPreview" style="display:none;margin-top:.5rem" class="voice-preview-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-        <b>Audio Playback & Transcription</b>
-        <button type="button" class="btn g sm" id="vBtnReRec" style="padding:.2rem .5rem;font-size:.75rem">${t("voice_rerecord")}</button>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span id="vLangBadge" class="voice-status-badge" style="background:#e0f2fe;color:#0369a1">Detected: English</span>
+        <span style="font-size:.75rem;color:var(--mu)">Review and edit English text before saving</span>
       </div>
-      <audio id="vAudioPlayer" controls style="width:100%;height:2.25rem;margin-bottom:.5rem"></audio>
-      <div id="vOrigBox" style="margin-bottom:.35rem"><b>${t("voice_orig")}</b><span id="vOrigText" style="color:#222"></span></div>
-      <div id="vTransBox"><b>${t("voice_trans")}</b><span id="vTransText" style="color:var(--ok);font-weight:600"></span></div>
+      <audio id="vAudioPlayer" controls style="width:100%;height:2.25rem"></audio>
+      <div id="vOrigBox">
+        <b>${t("voice_orig")}</b>
+        <div id="vOrigText" style="padding:.4rem .6rem;background:#f8fafc;border-radius:.4rem;border:1px solid #e2e8f0;color:#333;font-size:.85rem"></div>
+      </div>
+      <div id="vTransBox">
+        <b style="color:#15803d">${t("voice_trans")}</b>
+        <textarea id="vTransInput" class="voice-review-edit" rows="3" placeholder="English translation will appear here..."></textarea>
+      </div>
+      <div class="voice-actions">
+        <button type="button" class="voice-btn-apply" id="vBtnApply">${t("voice_apply")}</button>
+        <button type="button" class="btn g sm" id="vBtnReRec">${t("voice_rerecord")}</button>
+        <button type="button" class="btn g sm" id="vBtnDiscard">${t("voice_discard")}</button>
+      </div>
     </div>
   `;
   container.append(widget);
@@ -415,36 +453,72 @@ function setupVoiceRecorder(targetName, container) {
   const btnRec = widget.querySelector("#vBtnRec");
   const btnPause = widget.querySelector("#vBtnPause");
   const btnReRec = widget.querySelector("#vBtnReRec");
+  const btnDiscard = widget.querySelector("#vBtnDiscard");
+  const btnApply = widget.querySelector("#vBtnApply");
   const fileInput = widget.querySelector("#vFileInput");
   const vTimer = widget.querySelector("#vTimer");
   const vStatus = widget.querySelector("#vStatus");
   const vPreview = widget.querySelector("#vPreview");
   const vAudio = widget.querySelector("#vAudioPlayer");
+  const vLangBadge = widget.querySelector("#vLangBadge");
   const vOrigText = widget.querySelector("#vOrigText");
-  const vTransText = widget.querySelector("#vTransText");
+  const vTransInput = widget.querySelector("#vTransInput");
+
+  // Language pill selector
+  widget.querySelectorAll(".voice-lang-pill").forEach(pill => {
+    pill.onclick = () => {
+      widget.querySelectorAll(".voice-lang-pill").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      activeLang = pill.getAttribute("data-lang");
+    };
+  });
 
   async function processAudio(blob, initialTranscript = "") {
-    vAudio.src = URL.createObjectURL(blob);
+    if (blob) {
+      vAudio.src = URL.createObjectURL(blob);
+    }
     vStatus.textContent = t("voice_processing");
 
     const fd = new FormData();
-    fd.append("audio", blob, blob.name || "voice_recording.webm");
+    if (blob) {
+      fd.append("audio", blob, blob.name || "voice_recording.webm");
+    }
     fd.append("transcript", initialTranscript);
-    fd.append("lang", CUR_LANG);
+    fd.append("lang", activeLang === "auto" ? CUR_LANG : activeLang);
 
     try {
+      vStatus.textContent = t("voice_translating");
       const res = await post("/api/voice/process", fd);
       vStatus.textContent = t("voice_success");
-      vPreview.style.display = "block";
-      vOrigText.textContent = res.original_transcript || (initialTranscript || "(Audio captured)");
-      vTransText.textContent = res.english_translation || res.original_transcript;
+      vPreview.style.display = "grid";
 
-      const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
-      if (formInput) {
-        formInput.value = res.english_translation || res.original_transcript;
-        formInput.focus();
+      const origText = res.original_transcript || initialTranscript || "(Spoken audio captured)";
+      const engText = res.english_translation || res.original_transcript || "";
+      const detLang = res.detected_lang || "en";
+      const detLangName = res.detected_lang_name || (detLang === "hi" ? "Hindi" : (detLang === "ar" ? "Arabic" : "English"));
+
+      vOrigText.textContent = origText;
+      vTransInput.value = engText;
+
+      vLangBadge.textContent = `Detected: ${detLangName} (${detLang.toUpperCase()})`;
+      if (detLang === "hi") {
+        vLangBadge.style.background = "#fef3c7";
+        vLangBadge.style.color = "#92400e";
+      } else if (detLang === "ar") {
+        vLangBadge.style.background = "#dbeafe";
+        vLangBadge.style.color = "#1e40af";
+      } else {
+        vLangBadge.style.background = "#dcfce7";
+        vLangBadge.style.color = "#166534";
       }
 
+      // Automatically fill the target input as initial suggestion
+      const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
+      if (formInput && engText) {
+        formInput.value = engText;
+      }
+
+      // Save hidden fields
       let hLang = container.querySelector('input[name="original_lang"]');
       if (!hLang) {
         hLang = document.createElement("input");
@@ -452,7 +526,7 @@ function setupVoiceRecorder(targetName, container) {
         hLang.name = "original_lang";
         container.append(hLang);
       }
-      hLang.value = res.detected_lang || CUR_LANG;
+      hLang.value = detLang;
 
       let hTrans = container.querySelector('input[name="original_transcript"]');
       if (!hTrans) {
@@ -461,7 +535,7 @@ function setupVoiceRecorder(targetName, container) {
         hTrans.name = "original_transcript";
         container.append(hTrans);
       }
-      hTrans.value = res.original_transcript || initialTranscript;
+      hTrans.value = origText;
 
       let hVoice = container.querySelector('input[name="voice_doc_id"]');
       if (!hVoice) {
@@ -471,17 +545,30 @@ function setupVoiceRecorder(targetName, container) {
         container.append(hVoice);
       }
       if (res.audio_id) hVoice.value = res.audio_id;
+
     } catch (err) {
-      vStatus.textContent = "Processing complete: " + err.message;
+      vStatus.textContent = t("voice_failed") + " (" + err.message + ")";
     }
   }
 
-  // Upload existing audio handler
-  fileInput.onchange = async () => {
-    if (fileInput.files && fileInput.files[0]) {
-      const f = fileInput.files[0];
-      await processAudio(f, "");
+  // Apply button handler
+  btnApply.onclick = () => {
+    const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
+    if (formInput) {
+      formInput.value = vTransInput.value;
+      formInput.focus();
+      formInput.dispatchEvent(new Event("input", { bubbles: true }));
     }
+    vStatus.textContent = "✓ Applied English text to form.";
+  };
+
+  // Discard button handler
+  btnDiscard.onclick = () => {
+    vPreview.style.display = "none";
+    vAudio.src = "";
+    vOrigText.textContent = "";
+    vTransInput.value = "";
+    vStatus.textContent = t("voice_instruction");
   };
 
   // Re-record handler
@@ -489,18 +576,25 @@ function setupVoiceRecorder(targetName, container) {
     vPreview.style.display = "none";
     vAudio.src = "";
     vOrigText.textContent = "";
-    vTransText.textContent = "";
+    vTransInput.value = "";
     vStatus.textContent = t("voice_instruction");
     vTimer.style.display = "none";
     vTimer.textContent = "00:00";
     VOICE_STATE.seconds = 0;
   };
 
+  // Upload file handler
+  fileInput.onchange = async () => {
+    if (fileInput.files && fileInput.files[0]) {
+      const f = fileInput.files[0];
+      await processAudio(f, "");
+    }
+  };
+
   // Pause / Resume handler
   btnPause.onclick = () => {
     if (!VOICE_STATE.isRecording || !VOICE_STATE.mediaRecorder) return;
     if (!VOICE_STATE.isPaused) {
-      // Pause
       try {
         VOICE_STATE.mediaRecorder.pause();
         VOICE_STATE.isPaused = true;
@@ -509,7 +603,6 @@ function setupVoiceRecorder(targetName, container) {
         vStatus.textContent = "Recording paused.";
       } catch (e) {}
     } else {
-      // Resume
       try {
         VOICE_STATE.mediaRecorder.resume();
         VOICE_STATE.isPaused = false;
@@ -525,6 +618,7 @@ function setupVoiceRecorder(targetName, container) {
     }
   };
 
+  // Record button handler
   btnRec.onclick = async () => {
     if (VOICE_STATE.isRecording) {
       // STOP RECORDING
@@ -561,20 +655,28 @@ function setupVoiceRecorder(targetName, container) {
           await processAudio(audioBlob, VOICE_STATE.transcript);
         };
 
-        // Browser speech recognition where supported
+        // Browser speech recognition
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRec) {
           VOICE_STATE.recognition = new SpeechRec();
           VOICE_STATE.recognition.continuous = true;
           VOICE_STATE.recognition.interimResults = true;
-          VOICE_STATE.recognition.lang = CUR_LANG === "ar" ? "ar-SA" : (CUR_LANG === "hi" ? "hi-IN" : "en-US");
+          
+          let targetLangCode = "en-US";
+          if (activeLang === "hi") targetLangCode = "hi-IN";
+          else if (activeLang === "ar") targetLangCode = "ar-SA";
+          else if (activeLang === "en") targetLangCode = "en-US";
+          else if (CUR_LANG === "hi") targetLangCode = "hi-IN";
+          else if (CUR_LANG === "ar") targetLangCode = "ar-SA";
+
+          VOICE_STATE.recognition.lang = targetLangCode;
           VOICE_STATE.recognition.onresult = event => {
             let finalStr = "";
             for (let i = 0; i < event.results.length; i++) {
               finalStr += event.results[i][0].transcript + " ";
             }
             VOICE_STATE.transcript = finalStr.trim();
-            vStatus.textContent = "Listening: " + VOICE_STATE.transcript;
+            vStatus.textContent = "Listening (" + targetLangCode + "): " + VOICE_STATE.transcript;
           };
           try { VOICE_STATE.recognition.start(); } catch (e) {}
         }
@@ -1160,12 +1262,13 @@ V.pur = async () => {
       ["status", t("status"), r => chip(r.status) + (r.to_stock ? ' <span class="chip c-verified">For Stock</span>' : "")],
       ["unit_price", "Unit Price", r => r.unit_price ? `${rs(r.unit_price)}${r.currency && r.currency !== 'KWD' ? ` <small class="mu">(${r.original_price} ${r.currency})</small>` : ''}` : "-"],
       ["invoice_no", "Invoice No"],
-      ["bill_id", "Original Bill", r => bill(r.bill_id)]
+      ["bill_id", "Documents", r => `<button class="btn sm" data-a="purDocs" data-id="${r.id}" style="padding:.2rem .5rem">📎 Docs (${r.doc_count || (r.bill_id ? 1 : 0)})</button>`]
     ], d, r => (
       (can("purchase.approve") && r.status === "Requested" ?
         B("pdec", r.id, "Approve", 'data-d="approve"') +
         B("pdec", r.id, "Reject", 'data-d="reject"') : "") +
-      (can("purchase.record") && r.status === "Approved" ? B("prec", r.id, "Record Bill & Payment") : "")
+      (can("purchase.record") && r.status === "Approved" ? B("prec", r.id, "Record Bill & Payment") : "") +
+      B("purDocs", r.id, "📎 Docs (" + (r.doc_count || (r.bill_id ? 1 : 0)) + ")")
     ))}
   `;
 };
@@ -1628,7 +1731,7 @@ ACT.decide = async d => {
   const f = await ask(d.d === "approve" ? "Approve Complaint" : (d.d === "reject" ? "Reject Complaint" : "Request More Information"), [
     { n: "note", l: d.d === "approve" ? "Approval Note (Optional)" : "Reason / Information Requested", t: "textarea", r: d.d !== "approve" },
     { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" }
-  ], "note");
+  ]);
   if (!f) return;
   await post(`/complaints/${d.id}/decide`, { ...fj(f), decision: d.d });
   await done("Complaint decision recorded.");
@@ -1770,7 +1873,7 @@ const CURR_OPTS = [
 ACT.newU = async () => {
   const [partsList, supList] = await Promise.all([api("/parts"), api("/suppliers")]);
   const f = await ask("Request External Purchase", [
-    { n: "part_name", l: "Part Name / Description (or Voice Record)", r: 1 },
+    { n: "part_name", l: "Part Name / Description", r: 1 },
     { n: "qty", l: "Quantity", t: "number", r: 1 },
     { n: "part_id", l: "Catalogue Match", t: "select", o: opts(partsList, "id", p => `${p.stock_id} · ${p.name} (${p.qty} in stock)`, "(Not in catalogue)") },
     { n: "wo_id", l: "Work Order", t: "select", o: await woOpts("(None, stock purchase)") },
@@ -1780,7 +1883,7 @@ ACT.newU = async () => {
     { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
     { n: "supplier_id", l: "Supplier", t: "select", o: opts(supList, "id", s => s.name, "(Other)") },
     { n: "supplier", l: "Supplier / Outside Shop Name" }
-  ], "part_name");
+  ]);
   if (!f) return;
   const r = await post("/purchases", fj(f));
   await done("Purchase request " + r.code + " submitted.");
@@ -1798,13 +1901,167 @@ ACT.prec = async d => {
     { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
     { n: "unit_price", l: "Actual Unit Price", t: "number", r: 1 },
     { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
-    { n: "invoice_no", l: "Invoice Number", r: 1 },
+    { n: "invoice_no", l: "Invoice / Bill Number", r: 1 },
     { n: "supplier", l: "Supplier Name" },
-    { n: "bill", l: "Original Bill / Invoice (PDF, JPG, PNG)", t: "file", r: 1 }
+    { n: "doc_kind", l: "Document Type", t: "select", o: [
+      ["External Purchase Bill", "External Purchase Bill"],
+      ["Supplier Invoice", "Supplier Invoice"],
+      ["Purchase Receipt", "Purchase Receipt"],
+      ["Supporting Document", "Supporting Document"]
+    ], v: "External Purchase Bill" },
+    { n: "bill", l: "Original Bill / Invoice / Receipt (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 }
   ]);
   if (!f) return;
   await post(`/purchases/${d.id}/record`, f);
   await done("Purchase recorded and bill saved.");
+};
+
+ACT.purDocs = async d => {
+  const purchaseId = d.id;
+  async function renderModal() {
+    let res = { documents: [], purchase: {} };
+    try {
+      res = await api(`/purchases/${purchaseId}/documents`);
+    } catch (e) {
+      alert("Failed to load documents: " + e.message);
+      return;
+    }
+    const docs = res.documents || [];
+    const p = res.purchase || {};
+
+    const dlg = document.createElement("dialog");
+    dlg.className = "dlg pur-doc-modal";
+    dlg.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <h3 class="d" style="margin:0">📎 Purchase Documents: ${esc(p.code || '')} - ${esc(p.part_name || '')}</h3>
+        <button type="button" class="btn sm g" id="purCloseBtn">✕</button>
+      </div>
+      <p class="mu" style="font-size:.85rem;margin-top:0">Upload and manage bills, supplier invoices, receipts, and supporting documents.</p>
+      
+      <div class="pur-doc-list">
+        ${docs.length === 0 ? `<div style="text-align:center;padding:1.5rem;color:var(--mu);background:#f8fafc;border-radius:.5rem">No documents uploaded yet for this purchase.</div>` : ''}
+        ${docs.map(doc => `
+          <div class="pur-doc-item">
+            <div style="display:flex;align-items:center;gap:.65rem">
+              <span style="font-size:1.3rem">${(doc.filename || '').endsWith('.pdf') ? '📄' : '🖼️'}</span>
+              <div>
+                <div style="font-weight:600;color:#111">${esc(doc.filename)}</div>
+                <div style="font-size:.75rem;color:var(--mu)">
+                  <span class="chip" style="background:#e0f2fe;color:#0369a1;padding:.1rem .4rem">${esc(doc.kind || 'Document')}</span>
+                  · ${(doc.bytes / 1024).toFixed(1)} KB · ${esc(doc.created_at || '')}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:.35rem">
+              <a href="/api/files/${doc.id}" target="_blank" class="btn sm" style="text-decoration:none">👁️ View</a>
+              <a href="/api/files/${doc.id}" download="${esc(doc.filename)}" class="btn sm g" style="text-decoration:none">⬇️ Download</a>
+              <button type="button" class="btn sm er" data-doc-id="${doc.id}">🗑️</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="border-top:1px solid var(--ln);padding-top:.85rem;margin-top:.75rem">
+        <h4 style="margin:0 0 .5rem 0;font-size:.9rem">Upload New Purchase Document</h4>
+        <form id="purDocUploadForm" style="display:grid;gap:.65rem">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <div>
+              <label style="font-size:.75rem;font-weight:600;color:var(--mu);display:block;margin-bottom:.25rem">DOCUMENT TYPE</label>
+              <select name="kind" class="inp" style="width:100%" required>
+                <option value="External Purchase Bill">External Purchase Bill</option>
+                <option value="Supplier Invoice">Supplier Invoice</option>
+                <option value="Purchase Receipt">Purchase Receipt</option>
+                <option value="Supporting Document">Supporting Document</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:.75rem;font-weight:600;color:var(--mu);display:block;margin-bottom:.25rem">CHOOSE FILE (PDF, JPG, JPEG, PNG, WEBP)</label>
+              <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp" class="inp" style="width:100%" required>
+            </div>
+          </div>
+          <div id="purUploadProg" class="pur-upload-progress" style="display:none">
+            <div id="purUploadBar" class="pur-upload-bar"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem">
+            <button type="submit" class="btn" id="purSubmitBtn">⬆️ Upload Document</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.append(dlg);
+    dlg.showModal();
+
+    dlg.querySelector("#purCloseBtn").onclick = () => {
+      dlg.close();
+      dlg.remove();
+      // Reload current view to update doc counter
+      if (typeof V.pur === "function") nav("pur");
+    };
+
+    // Delete document handler
+    dlg.querySelectorAll(".btn.sm.er").forEach(btn => {
+      btn.onclick = async () => {
+        const docId = btn.getAttribute("data-doc-id");
+        if (!confirm("Are you sure you want to delete this purchase document?")) return;
+        try {
+          await api(`/purchases/${purchaseId}/documents/${docId}`, { method: "DELETE" });
+          dlg.close();
+          dlg.remove();
+          await renderModal();
+        } catch (e) {
+          alert("Error deleting document: " + e.message);
+        }
+      };
+    });
+
+    // Upload form handler
+    const form = dlg.querySelector("#purDocUploadForm");
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const fileInput = form.querySelector('input[type="file"]');
+      if (!fileInput.files || !fileInput.files[0]) {
+        alert("Please select a file to upload.");
+        return;
+      }
+      const file = fileInput.files[0];
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext)) {
+        alert("Invalid file format. Allowed: PDF, JPG, JPEG, PNG, WEBP.");
+        return;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        alert("File size exceeds 25 MB limit.");
+        return;
+      }
+
+      const prog = dlg.querySelector("#purUploadProg");
+      const bar = dlg.querySelector("#purUploadBar");
+      const submitBtn = dlg.querySelector("#purSubmitBtn");
+
+      prog.style.display = "block";
+      bar.style.width = "40%";
+      submitBtn.disabled = true;
+
+      try {
+        const fd = new FormData(form);
+        bar.style.width = "75%";
+        await post(`/purchases/${purchaseId}/documents`, fd);
+        bar.style.width = "100%";
+        setTimeout(async () => {
+          dlg.close();
+          dlg.remove();
+          await renderModal();
+        }, 300);
+      } catch (err) {
+        prog.style.display = "none";
+        submitBtn.disabled = false;
+        alert("Upload failed: " + err.message);
+      }
+    };
+  }
+
+  await renderModal();
 };
 
 ACT.addSup = async () => {
