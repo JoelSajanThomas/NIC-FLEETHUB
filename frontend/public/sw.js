@@ -24,13 +24,13 @@ const STATIC_ASSETS = [
   "/assets/logo.webp",
   "/assets/logo-mark.webp",
   "/assets/truck.webp",
-  "/assets/icon-192x192.png",
-  "/assets/icon-512x512.png",
-  "/assets/icon-maskable-192x192.png",
-  "/assets/icon-maskable-512x512.png",
-  "/assets/apple-touch-icon.png",
-  "/assets/favicon-32x32.png",
-  "/assets/favicon-16x16.png"
+  "/assets/icon-192x192.webp",
+  "/assets/icon-512x512.webp",
+  "/assets/icon-maskable-192x192.webp",
+  "/assets/icon-maskable-512x512.webp",
+  "/assets/apple-touch-icon.webp",
+  "/assets/favicon-32x32.webp",
+  "/assets/favicon-16x16.webp"
 ];
 
 // 1. Install Event: Cache core shell

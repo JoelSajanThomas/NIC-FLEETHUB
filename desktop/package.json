@@ -20,7 +20,7 @@
     },
     "win": {
       "target": ["nsis", "portable"],
-      "icon": "../frontend/public/assets/icon-512x512.png",
+      "icon": "../frontend/public/assets/icon-512x512.webp",
       "publisherName": "National Industries Company (K.S.C.C)"
     },
     "nsis": {
@@ -32,7 +32,7 @@
     },
     "mac": {
       "target": ["dmg", "zip"],
-      "icon": "../frontend/public/assets/icon-512x512.png",
+      "icon": "../frontend/public/assets/icon-512x512.webp",
       "category": "public.app-category.business",
       "hardenedRuntime": true,
       "gatekeeperAssess": false

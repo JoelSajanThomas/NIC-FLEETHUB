@@ -10,15 +10,6 @@ from ..utils.helpers import P, now
 
 voice_bp = Blueprint("voice", __name__)
 
-@voice_bp.post("/api/translate")
-@need(None)
-def api_translate():
-    p = P()
-    t = p.get("text", "")
-    target = p.get("target", "en")
-    res, det = translate_text(t, target)
-    return jsonify(translated=res, detected_lang=det, target=target)
-
 @voice_bp.post("/api/voice/process")
 @need(None)
 def api_voice_process():

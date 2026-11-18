@@ -17,11 +17,15 @@ The application is structured into two clearly separated, independently runnable
 ```text
 nic-fleethub/
 ├── frontend/             # Client-side user interface (Port 3000)
-│   ├── public/           # Static public assets
-│   ├── src/              # Modular UI code (api, components, pages, styles, services)
+│   ├── public/           # Static public assets, WebP images, styles & client scripts
+│   │   ├── assets/       # Optimized WebP assets (icons, logo, hero)
+│   │   ├── index.html    # Public homepage
+│   │   ├── app.html      # Enterprise console
+│   │   ├── app.js        # Homepage animations & logic
+│   │   ├── console.js    # Enterprise console application SPA
+│   │   ├── styles.css    # Unified stylesheets
+│   │   └── console.css   # Console layout styles
 │   ├── dev-server.js     # Zero-dependency development server with backend proxy
-│   ├── index.html        # Public homepage
-│   ├── app.html          # Enterprise console
 │   └── package.json      # Frontend scripts
 │
 ├── backend/              # Server-side APIs & database (Port 5000)

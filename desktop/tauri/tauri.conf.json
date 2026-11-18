@@ -40,8 +40,8 @@
       },
       "externalBin": [],
       "icon": [
-        "../../frontend/public/assets/icon-192x192.png",
-        "../../frontend/public/assets/icon-512x512.png"
+        "../../frontend/public/assets/icon-192x192.webp",
+        "../../frontend/public/assets/icon-512x512.webp"
       ],
       "identifier": "kw.com.nic.fleethub.tauri",
       "longDescription": "Enterprise Fleet, Workshop & Heavy Equipment Management System for National Industries Company (Kuwait)",

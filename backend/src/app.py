@@ -57,7 +57,8 @@ def create_app():
         raise Bad("Unknown API route", 404)
 
     # Static UI Serving for unified deployment
-    frontend_dir = os.path.join(ROOT_DIR, "frontend")
+    frontend_pub = os.path.join(ROOT_DIR, "frontend", "public")
+    frontend_dir = frontend_pub if os.path.exists(frontend_pub) else os.path.join(ROOT_DIR, "frontend")
 
     @app.get("/")
     def serve_index():

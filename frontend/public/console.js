@@ -2280,7 +2280,7 @@ function shell() {
   R.innerHTML = `
     <header class="top noprint">
       <div style="display:flex;align-items:center;gap:.65rem">
-        <img src="/assets/logo.webp" onerror="this.onerror=null;this.src='/assets/logo.png'" alt="National Industries Company" style="height:2.25rem;max-width:5.5rem;object-fit:contain">
+        <img src="/assets/logo.webp"  alt="National Industries Company" style="height:2.25rem;max-width:5.5rem;object-fit:contain">
         <b class="brand">${t("app_title")}</b>
       </div>
       ${can("asset.view") ? `
@@ -2336,7 +2336,7 @@ function loginView() {
     <div class="login-wrap">
       <form class="login card" id="lf">
         <div style="display:flex;flex-direction:column;align-items:center;gap:.6rem;margin-bottom:1.5rem;text-align:center">
-          <img src="/assets/logo.webp" onerror="this.onerror=null;this.src='/assets/logo.png'" alt="National Industries Company" style="height:4.5rem;max-width:12rem;object-fit:contain;margin:0 auto .25rem;display:block">
+          <img src="/assets/logo.webp"  alt="National Industries Company" style="height:4.5rem;max-width:12rem;object-fit:contain;margin:0 auto .25rem;display:block">
           <div style="display:flex;justify-content:center;align-items:center;gap:.75rem;flex-wrap:wrap">
             <h2 class="d" style="margin:0;text-align:center;white-space:nowrap">${t("app_title")}</h2>
             <select class="lang-select" id="loginLangSel">

@@ -11,7 +11,7 @@ const url = require("url");
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const BACKEND_HOST = process.env.BACKEND_HOST || "127.0.0.1";
 const BACKEND_PORT = parseInt(process.env.BACKEND_PORT || "5000", 10);
-const PUBLIC_DIR = __dirname;
+const PUBLIC_DIR = fs.existsSync(path.join(__dirname, "public")) ? path.join(__dirname, "public") : __dirname;
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",

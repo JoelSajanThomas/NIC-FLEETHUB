@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify
 from ..database.connection import rows, tx, audit
 from ..middleware.error_middleware import Bad
 from ..middleware.auth_middleware import need
-from ..services.currency_service import convert_to_kwd, fetch_live_rates
+from ..services.currency_service import fetch_live_rates
 from ..utils.helpers import P, now
 
 currency_bp = Blueprint("currency", __name__)
@@ -33,16 +33,6 @@ def api_currency_set_rate():
                   (cur, round(rate, 6), r_from, now()))
         audit("update", "currency_rate", cur, f"Manual rate {rate} KWD")
     return jsonify(ok=1, currency=cur, rate_to_kwd=rate, rate_from_kwd=r_from)
-
-@currency_bp.post("/api/currency/convert")
-@need(None)
-def api_currency_convert():
-    p = P()
-    amt = float(p.get("amount") or 0)
-    cur = (p.get("currency") or "KWD").strip().upper()
-    manual = float(p.get("exchange_rate") or 0) if p.get("exchange_rate") else None
-    kwd, rate = convert_to_kwd(amt, cur, manual)
-    return jsonify(original_amount=amt, currency=cur, kwd_amount=kwd, exchange_rate=rate, date=now()[:10])
 
 @currency_bp.post("/api/currency/sync")
 @need("settings")

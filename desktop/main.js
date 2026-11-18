@@ -35,7 +35,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 680,
     title: "NIC FleetHub — Kuwait Fleet & Workshop Management",
-    icon: path.join(__dirname, "../frontend/public/assets/icon-512x512.png"),
+    icon: path.join(__dirname, "../frontend/public/assets/icon-512x512.webp"),
     backgroundColor: "#0a0a0a",
     show: false,
     webPreferences: {
