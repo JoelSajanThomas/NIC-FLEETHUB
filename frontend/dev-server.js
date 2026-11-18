@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
       "Content-Type": pathname.endsWith("manifest.json") ? "application/manifest+json; charset=utf-8" : contentType,
       "Content-Length": stats.size,
       "Access-Control-Allow-Origin": "*",
-      "Cache-Control": (ext === ".html" || pathname === "/sw.js") ? "no-cache, no-store, must-revalidate" : "max-age=3600"
+      "Cache-Control": (ext === ".html" || ext === ".js" || ext === ".css" || pathname === "/sw.js") ? "no-cache, no-store, must-revalidate" : "max-age=3600"
     };
 
     if (pathname === "/sw.js") {

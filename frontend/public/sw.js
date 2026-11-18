@@ -8,7 +8,7 @@
  * 3. Gracefully handle offline states and network interruptions.
  */
 
-const CACHE_NAME = "fleethub-shell-v1.0.1";
+const CACHE_NAME = "fleethub-shell-v2.0.0";
 
 // Static UI Assets (Application Shell)
 const STATIC_ASSETS = [

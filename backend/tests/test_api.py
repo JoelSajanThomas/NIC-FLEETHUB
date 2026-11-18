@@ -349,6 +349,17 @@ class FleetHubBackendTestCase(unittest.TestCase):
                         os.remove(os.path.join(upload_audio_dir, fn))
                     except Exception:
                         pass
+        # Clean any test-created records from database
+        try:
+            from src.database.connection import tx
+            with self.app.app_context():
+                with tx() as c:
+                    c.execute("DELETE FROM complaints WHERE code LIKE 'CMP-000%'")
+                    c.execute("DELETE FROM work_orders WHERE code LIKE 'WO-000%'")
+                    c.execute("DELETE FROM assets WHERE name LIKE 'Sync Test%'")
+                    c.execute("DELETE FROM notifications WHERE title LIKE '%CMP-000%'")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     unittest.main()

@@ -102,6 +102,12 @@ def create_app():
             return send_from_directory(os.path.join(frontend_dir, "public"), p)
         return jsonify(error="Not found"), 404
 
+    @app.after_request
+    def set_cache_headers(response):
+        if request.path.endswith((".js", ".css", ".html")) or request.path in ("/", "/app"):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
+
     # Run database initialization
     with app.app_context():
         run_migrations()
