@@ -214,7 +214,8 @@ def transcribe_audio_file(file_path, lang="auto"):
     Strictly supports English, Hindi, and Arabic.
     """
     try:
-        import speech_recognition as sr
+        import importlib
+        sr = importlib.import_module("speech_recognition")
         r = sr.Recognizer()
         
         # Check if file exists
