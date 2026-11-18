@@ -1623,21 +1623,34 @@ V.reports = async () => {
 
 V.alerts = async () => {
   const [al, notifs] = await Promise.all([api("/alerts"), api("/notifications")]);
+  const unreadNotifs = (notifs || []).filter(n => !n.read);
   return `
-    <h2 class="d">${t("alerts")}</h2>
-    <div class="bar2">
-      <button class="btn g sm" data-a="notifAll">Mark All Read</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+      <div>
+        <h2 class="d" style="margin:0">${t("alerts")}</h2>
+        <p class="mu" style="margin:.25rem 0 0;font-size:.9rem">${al.total} operational alert items requiring attention</p>
+      </div>
+      <div class="bar2" style="margin:0">
+        <button class="btn g sm" data-a="notifAll">Mark All Notifications Read</button>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(22rem,1fr));gap:1.5rem;margin-top:1rem">
       <div class="card">
-        <h4 style="margin-bottom:1rem">⚠️ Low Stock Spare Parts (${al.low_stock.length})</h4>
-        ${al.low_stock.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h4 style="margin:0">📢 Pending Complaints Awaiting Review (${(al.complaints_list || []).length})</h4>
+          ${(al.complaints_list || []).length ? `<button class="btn sm" data-a="nav" data-id="comp">Go to Complaints →</button>` : ""}
+        </div>
+        ${(al.complaints_list || []).map(c => `
           <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
-            <div>
-              <b>${esc(p.stock_id)} · ${esc(p.name)}</b>
-              <small class="mu" style="display:block">Current: <b class="low">${p.qty}</b> (Min: ${p.min_qty} ${esc(p.unit)})</small>
+            <div style="flex:1;padding-right:.75rem">
+              <b>${esc(c.code)} · ${esc(c.asset_code)}</b> <small class="mu">(${esc(c.asset_name)})</small>
+              <div style="margin-top:.2rem;display:flex;gap:.35rem;align-items:center">
+                <span class="chip ${c.priority === 'Critical' ? 'c-crit' : (c.priority === 'High' ? 'c-high' : 'c-reported')}">${esc(c.priority)}</span>
+                <span class="chip c-reported">${esc(c.status)}</span>
+              </div>
+              <small class="mu" style="display:block;margin-top:.25rem">${esc(c.description.slice(0, 75))}${c.description.length > 75 ? '...' : ''}</small>
             </div>
-            <button class="btn sm" data-a="nav" data-id="parts">Restock →</button>
+            <button class="btn sm" data-a="nav" data-id="comp">Review →</button>
           </div>
         `).join("") || `<p class='mu'>${t("all_healthy")}</p>`}
       </div>
@@ -1676,6 +1689,77 @@ V.alerts = async () => {
             <button class="btn g sm" data-a="open" data-id="${a.id}">Open</button>
           </div>
         `).join("") || `<p class='mu'>${t("all_healthy")}</p>`}
+      </div>
+
+      <div class="card">
+        <h4 style="margin-bottom:1rem">⚠️ Low Stock Spare Parts (${al.low_stock.length})</h4>
+        ${al.low_stock.map(p => `
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
+            <div>
+              <b>${esc(p.stock_id)} · ${esc(p.name)}</b>
+              <small class="mu" style="display:block">Current: <b class="low">${p.qty}</b> (Min: ${p.min_qty} ${esc(p.unit)})</small>
+            </div>
+            <button class="btn sm" data-a="nav" data-id="parts">Restock →</button>
+          </div>
+        `).join("") || `<p class='mu'>${t("all_healthy")}</p>`}
+      </div>
+
+      ${(al.wo_inspections_list || []).length ? `
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h4 style="margin:0">🔍 Work Orders Pending Inspection (${al.wo_inspections_list.length})</h4>
+            <button class="btn sm" data-a="nav" data-id="wo">Go to Work Orders →</button>
+          </div>
+          ${al.wo_inspections_list.map(w => `
+            <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
+              <div style="flex:1;padding-right:.75rem">
+                <b>${esc(w.code)} · ${esc(w.asset_code)}</b>
+                <p style="margin:.2rem 0;font-size:.85rem">${esc(w.description.slice(0, 70))}</p>
+                <span class="chip c-assigned">${esc(w.status)}</span>
+              </div>
+              <button class="btn sm" data-a="nav" data-id="wo">Inspect →</button>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      ${(al.purchases_list || []).length ? `
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <h4 style="margin:0">🛒 Purchases Awaiting Approval (${al.purchases_list.length})</h4>
+            <button class="btn sm" data-a="nav" data-id="pur">Go to Purchases →</button>
+          </div>
+          ${al.purchases_list.map(p => `
+            <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
+              <div style="flex:1;padding-right:.75rem">
+                <b>${esc(p.code)} · ${esc(p.part_name)}</b>
+                <p style="margin:.2rem 0;font-size:.85rem">Qty: ${p.qty} · Est: ${p.est_price || 0} ${esc(p.currency || 'KWD')}</p>
+              </div>
+              <button class="btn sm" data-a="nav" data-id="pur">Approve →</button>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      <div class="card" style="grid-column:1/-1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h4 style="margin:0">🔔 Activity & System Notifications (${unreadNotifs.length} Unread)</h4>
+          ${unreadNotifs.length ? `<button class="btn g sm" data-a="notifAll">Mark All Read</button>` : ""}
+        </div>
+        ${(notifs || []).slice(0, 15).map(n => `
+          <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem;opacity:${n.read ? 0.65 : 1}">
+            <div>
+              <div style="display:flex;align-items:center;gap:.5rem">
+                ${!n.read ? `<span class="dot" style="display:inline-block;width:8px;height:8px;background:var(--er,#c0392b);border-radius:50%"></span>` : ""}
+                <b>${esc(n.title)}</b>
+                <small class="chip ${n.read ? 'c-done' : 'c-crit'}">${n.read ? 'Read' : 'New'}</small>
+              </div>
+              <p style="margin:.25rem 0;font-size:.85rem;color:var(--ink)">${esc(n.message)}</p>
+              <small class="mu">${esc(n.created_at)}</small>
+            </div>
+            ${!n.read ? `<button class="btn sm" onclick="api('/notifications/${n.id}/read', {method:'POST'}).then(() => refresh())">Mark Read</button>` : ""}
+          </div>
+        `).join("") || `<p class='mu'>No recent notifications.</p>`}
       </div>
     </div>
   `;

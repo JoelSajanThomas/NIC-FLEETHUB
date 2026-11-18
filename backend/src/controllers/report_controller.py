@@ -115,21 +115,58 @@ def live_alerts():
     insp_exp = rows("SELECT id, code, name, reg_no, plate_category, inspection_expiry FROM assets WHERE archived=0 AND inspection_expiry IS NOT NULL AND inspection_expiry != '' AND inspection_expiry <= ? ORDER BY inspection_expiry ASC LIMIT 50", (in_30_days,))
     for x in insp_exp: x["expired"] = x["inspection_expiry"] < today
 
-    pending_complaints = c.execute("SELECT COUNT(*) FROM complaints WHERE status IN ('New', 'Info Requested')").fetchone()[0]
-    pending_wo_inspection = c.execute("SELECT COUNT(*) FROM work_orders WHERE status='Pending Inspection'").fetchone()[0]
-    pending_purchases = c.execute("SELECT COUNT(*) FROM purchases WHERE status='Requested'").fetchone()[0]
-    total_alerts = len(low_parts) + len(ins_exp) + len(reg_exp) + len(insp_exp) + (pending_complaints if can("complaint.review") else 0) + (pending_wo_inspection if can("wo.manage") else 0) + (pending_purchases if can("purchase.approve") else 0)
+    complaints_list = rows("""
+        SELECT c.id, c.code, c.description, c.priority, c.status, c.created_at,
+               a.id asset_id, a.code asset_code, a.name asset_name
+        FROM complaints c
+        JOIN assets a ON a.id = c.asset_id
+        WHERE c.status IN ('New', 'Info Requested')
+        ORDER BY CASE c.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Normal' THEN 3 ELSE 4 END, c.id DESC
+        LIMIT 50
+    """) if can("complaint.review") else []
+
+    wo_inspection_list = rows("""
+        SELECT w.id, w.code, w.description, w.priority, w.status,
+               a.id asset_id, a.code asset_code, a.name asset_name
+        FROM work_orders w
+        JOIN assets a ON a.id = w.asset_id
+        WHERE w.status = 'Pending Inspection'
+        ORDER BY w.id DESC LIMIT 50
+    """) if can("wo.manage") else []
+
+    purchases_list = rows("""
+        SELECT p.id, p.code, p.part_name, p.qty, p.est_price, p.currency,
+               a.id asset_id, a.code asset_code, a.name asset_name
+        FROM purchases p
+        LEFT JOIN assets a ON a.id = p.asset_id
+        WHERE p.status = 'Requested'
+        ORDER BY p.id DESC LIMIT 50
+    """) if can("purchase.approve") else []
+
+    pending_complaints = len(complaints_list)
+    pending_wo_inspection = len(wo_inspection_list)
+    pending_purchases = len(purchases_list)
+
+    total_alerts = (len(low_parts) + len(ins_exp) + len(reg_exp) + len(insp_exp) +
+                    pending_complaints + pending_wo_inspection + pending_purchases)
     return jsonify(
         total=total_alerts, low_stock=low_parts, insurance_expiring=ins_exp,
-        reg_expiring=reg_exp, inspection_expiring=insp_exp, pending_complaints=pending_complaints,
-        pending_wo_inspection=pending_wo_inspection, pending_purchases=pending_purchases
+        reg_expiring=reg_exp, inspection_expiring=insp_exp,
+        pending_complaints=pending_complaints,
+        pending_wo_inspection=pending_wo_inspection,
+        pending_purchases=pending_purchases,
+        complaints_list=complaints_list,
+        wo_inspections_list=wo_inspection_list,
+        purchases_list=purchases_list
     )
 
 @report_bp.get("/api/notifications")
 @need(None)
 def notif_list():
-    r = session["role"]
-    uid = session["uid"]
+    r = session.get("role", "")
+    uid = session.get("uid")
+    if r in ("super_admin", "admin", "manager"):
+        return jsonify(rows("SELECT * FROM notifications ORDER BY read ASC, id DESC LIMIT 50"))
     return jsonify(rows("SELECT * FROM notifications WHERE (user_id=? OR target_role=? OR target_role IS NULL) ORDER BY read ASC, id DESC LIMIT 50", (uid, r)))
 
 @report_bp.post("/api/notifications/<int:i>/read")
