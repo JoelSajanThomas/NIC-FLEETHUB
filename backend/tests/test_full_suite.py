@@ -318,9 +318,14 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
 
     def test_inventory_duplicate_stock_id_rejected(self):
         """TC-INV-02: Duplicate stock_id returns 409 Conflict."""
-        # Query existing parts
+        # Query existing parts or create one if empty
         res = self.client.get("/api/parts", headers=self.admin_headers)
-        existing_stock_id = json.loads(res.data)[0]["stock_id"]
+        parts = json.loads(res.data)
+        if parts:
+            existing_stock_id = parts[0]["stock_id"]
+        else:
+            p_res = self.client.post("/api/parts", json={"name": "Initial Part", "stock_id": "STK-INIT-01", "category": "Filters"}, headers=self.admin_headers)
+            existing_stock_id = json.loads(p_res.data)["stock_id"]
 
         res_dup = self.client.post("/api/parts", json={
             "name": "Duplicate part",

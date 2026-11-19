@@ -162,6 +162,14 @@ ALTER TABLE exchange_rates ADD COLUMN is_manual INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE exchange_rates ADD COLUMN updated_at TEXT;
 UPDATE exchange_rates SET rate_from_kwd = ROUND(1.0 / rate_to_kwd, 4) WHERE rate_to_kwd > 0 AND (rate_from_kwd IS NULL OR rate_from_kwd = 0);
 UPDATE exchange_rates SET updated_at = COALESCE(last_updated, datetime('now')) WHERE updated_at IS NULL;
+""",
+    # Migration 9: Transfers extended fields for compatibility
+    """
+ALTER TABLE transfers ADD COLUMN from_site_id INTEGER;
+ALTER TABLE transfers ADD COLUMN to_site_id INTEGER;
+ALTER TABLE transfers ADD COLUMN reason TEXT;
+ALTER TABLE transfers ADD COLUMN odometer_hours REAL DEFAULT 0;
+ALTER TABLE transfers ADD COLUMN transporter TEXT;
 """
 ]
 

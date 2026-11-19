@@ -11,7 +11,7 @@ def seed_defaults():
 
     # 1. Default Role Accounts (One per operational role)
     default_users = [
-        ("admin", "Administrator", "admin", os.environ.get("FLEETHUB_ADMIN_PASSWORD", "admin12345"), "en"),
+        ("admin", "Administrator", "super_admin", os.environ.get("FLEETHUB_ADMIN_PASSWORD", "admin12345"), "en"),
         ("superadmin", "Super Administrator", "super_admin", "superadmin12345", "en"),
         ("companyadmin", "Executive Director", "company_admin", "company12345", "en"),
         ("transport", "Transport Controller", "transport", "transport12345", "en"),
@@ -64,7 +64,7 @@ def seed_defaults():
 
     # 4. Exchange Rates (Pegged to KWD)
     rates = [
-        ("USD", 0.308, "Central Bank of Kuwait"),
+        ("USD", 0.3082, "Central Bank of Kuwait"),
         ("EUR", 0.334, "Central Bank of Kuwait"),
         ("GBP", 0.392, "Central Bank of Kuwait"),
         ("SAR", 0.082, "Central Bank of Kuwait"),

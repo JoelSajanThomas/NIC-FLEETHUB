@@ -182,12 +182,20 @@ class FleetHubBackendTestCase(unittest.TestCase):
         vdata = json.loads(voice_res.data)
         doc_id = vdata.get("doc_id")
 
-        # 2. Get registered asset
+        # 2. Get registered asset or create one
         assets_res = self.client.get("/api/assets")
         self.assertEqual(assets_res.status_code, 200)
         assets = json.loads(assets_res.data)
-        self.assertTrue(len(assets) > 0)
-        aid = assets[0]["id"]
+        if not assets:
+            self.client.post("/api/login", json={"username": "admin", "password": "admin12345"})
+            create_ast = self.client.post("/api/assets", json={
+                "name": "Fixture CAT 320D Excavator",
+                "category": "Excavator",
+                "equipment_type": "Hydraulic Excavator"
+            })
+            aid = json.loads(create_ast.data)["id"]
+        else:
+            aid = assets[0]["id"]
 
         # 3. Create complaint with voice metadata
         comp_res = self.client.post("/api/complaints", data={
