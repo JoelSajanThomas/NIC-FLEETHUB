@@ -12,8 +12,10 @@
 
   // 1. Service Worker Registration & Controller Change
   if ("serviceWorker" in navigator && (window.location.protocol === "http:" || window.location.protocol === "https:")) {
-    // Auto-reload once when a new service worker takes over control
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    // Auto-reload once only when an existing controlled page receives an update
     navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController) return;
       if (!refreshing) {
         refreshing = true;
         console.log("[PWA] Service Worker controller updated. Refreshing page...");

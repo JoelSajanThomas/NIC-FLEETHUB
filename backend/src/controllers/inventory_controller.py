@@ -35,6 +35,7 @@ def stock_move(c, pid, kind, qty, cost=None, **kw):
     return cur.lastrowid, pt
 
 @inventory_bp.get("/api/parts")
+@inventory_bp.get("/parts")
 @need("inventory.view")
 def parts():
     q = (request.args.get("q") or "").strip()
@@ -45,6 +46,7 @@ def parts():
     return jsonify(rows(sql, [f"%{q}%"] * 5 if q else []))
 
 @inventory_bp.post("/api/parts")
+@inventory_bp.post("/parts")
 @need("inventory.manage")
 def part_new():
     p = P()
@@ -66,6 +68,7 @@ def part_new():
     return jsonify(stock_id=sid, id=cur.lastrowid)
 
 @inventory_bp.post("/api/parts/<int:pid>/stock")
+@inventory_bp.post("/parts/<int:pid>/stock")
 @need("inventory.manage")
 def part_stock(pid):
     p = P()
@@ -80,6 +83,7 @@ def part_stock(pid):
     return jsonify(ok=1)
 
 @inventory_bp.post("/api/parts/<int:pid>/issue")
+@inventory_bp.post("/parts/<int:pid>/issue")
 @need("inventory.issue")
 def part_issue(pid):
     p = P()
@@ -100,6 +104,7 @@ def part_issue(pid):
     return jsonify(ok=1)
 
 @inventory_bp.post("/api/parts/<int:pid>/return")
+@inventory_bp.post("/parts/<int:pid>/return")
 @need("inventory.issue")
 def part_return(pid):
     p = P()
@@ -121,6 +126,7 @@ def part_return(pid):
     return jsonify(ok=1)
 
 @inventory_bp.get("/api/parts/<int:pid>/history")
+@inventory_bp.get("/parts/<int:pid>/history")
 @need("inventory.view")
 def part_hist(pid):
     return jsonify(rows("SELECT t.*, a.code asset_code, w.code wo_code FROM stock_tx t LEFT JOIN assets a ON a.id=t.asset_id LEFT JOIN work_orders w ON w.id=t.wo_id WHERE t.part_id=? ORDER BY t.id DESC", (pid,)))

@@ -149,7 +149,7 @@ async function syncHomepageData() {
       if (d.fleet.list && d.fleet.list.length) {
         elFleet.innerHTML = d.fleet.list.map(a => `
           <div class="row">
-            <span class="m" style="flex:1">${esc(a.code)} · ${esc(a.name.slice(0, 22))}</span>
+            <span class="m" style="flex:1">${esc(a.code)} · ${esc((a.name || "").slice(0, 22))}</span>
             <span class="chip ${a.status === 'Active' ? 'c-done' : (a.status === 'Under Repair' ? 'c-assigned' : 'c-reported')}">${esc(a.status)} (${esc(a.worksite || 'Kuwait')})</span>
           </div>
         `).join("");
@@ -164,8 +164,8 @@ async function syncHomepageData() {
       if (d.operations.priority_work_orders && d.operations.priority_work_orders.length) {
         elPrio.innerHTML = d.operations.priority_work_orders.map(w => `
           <div class="jc" style="margin-top:.6rem">
-            <span class="m">${esc(w.code)} · ${esc(w.asset_code)} (${esc(w.asset_name.slice(0, 18))})</span>
-            <p>${esc(w.description.slice(0, 60))}</p>
+            <span class="m">${esc(w.code)} · ${esc(w.asset_code)} (${esc((w.asset_name || "").slice(0, 18))})</span>
+            <p>${esc((w.description || w.desc || "").slice(0, 60))}</p>
             <div>
               <span class="chip ${w.priority === 'Critical' ? 'c-crit' : 'c-assigned'}">${esc(w.priority)}</span>
               <span class="chip ${w.status === 'In Progress' ? 'c-in-progress' : (w.status === 'Pending' ? 'c-reported' : 'c-done')}">${esc(w.status)}</span>

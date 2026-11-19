@@ -11,6 +11,7 @@ auth_bp = Blueprint("auth", __name__)
 FAIL = {}
 
 @auth_bp.post("/api/login")
+@auth_bp.post("/login")
 def login():
     p = P()
     u = (p.get("username") or "").strip().lower()
@@ -53,11 +54,13 @@ def login():
     )
 
 @auth_bp.post("/api/logout")
+@auth_bp.post("/logout")
 def logout():
     session.clear()
     return jsonify(ok=1)
 
 @auth_bp.get("/api/me")
+@auth_bp.get("/me")
 @need(None)
 def me():
     role = session.get("role", "")
@@ -82,6 +85,7 @@ def me():
     )
 
 @auth_bp.post("/api/user/lang")
+@auth_bp.post("/user/lang")
 @need(None)
 def set_lang():
     p = P()

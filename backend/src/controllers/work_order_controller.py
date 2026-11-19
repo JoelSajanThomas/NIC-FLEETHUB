@@ -95,7 +95,9 @@ def wo_list():
     return jsonify(out)
 
 @work_order_bp.post("/api/work-orders/<int:i>/status")
+@work_order_bp.post("/work-orders/<int:i>/status")
 @work_order_bp.post("/api/work-orders/<int:i>/progress")
+@work_order_bp.post("/work-orders/<int:i>/progress")
 @need("wo.update")
 def wo_status(i):
     p = P()

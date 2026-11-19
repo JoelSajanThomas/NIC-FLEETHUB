@@ -12,6 +12,7 @@ expense_bp = Blueprint("expenses", __name__)
 KINDS = ("external_labour", "outsourced_service", "towing", "external_inspection", "other_approved")
 
 @expense_bp.post("/api/expenses")
+@expense_bp.post("/expenses")
 @need("expense.manage")
 def exp_new():
     p = P()
@@ -54,6 +55,7 @@ def exp_new():
     return jsonify(ok=1)
 
 @expense_bp.get("/api/expenses")
+@expense_bp.get("/expenses")
 @need("expense.view")
 def exp_list():
     return jsonify(rows("SELECT e.*, a.code asset_code, a.name asset_name, (SELECT id FROM documents d WHERE d.expense_id=e.id LIMIT 1) bill_id FROM expenses e JOIN assets a ON a.id=e.asset_id ORDER BY e.id DESC LIMIT 500"))

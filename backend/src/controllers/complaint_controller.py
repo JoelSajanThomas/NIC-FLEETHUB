@@ -70,6 +70,7 @@ def comp_list():
     return jsonify(rows(sql + " ORDER BY c.id DESC LIMIT 500"))
 
 @complaint_bp.post("/api/complaints/<int:i>/decide")
+@complaint_bp.post("/complaints/<int:i>/decide")
 @need("complaint.review")
 def comp_decide(i):
     p = P()

@@ -1,458 +1,458 @@
-(()=>{
-const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
-const R = $("#root");
-const API_BASE = window.FLEETHUB_API_BASE || (document.querySelector('meta[name="fleethub-api-base"]')?.content) || "";
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const rs = (n, cur = "KWD") => {
-  const num = Number(n || 0);
-  if (cur === "KWD") {
-    const formatted = num.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-    return CUR_LANG === "ar" ? `${formatted} د.ك` : `${formatted} KWD`;
-  }
-  const formatted = num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${formatted} ${cur}`;
-};
-
-let ME = null, HIST = [], LIVE_ALERTS = { total: 0 };
-let CUR_LANG = localStorage.getItem("fleethub_lang") || "en";
-
-// ---------------- 1. MULTILINGUAL TRANSLATIONS (EN, HI, AR ONLY) ----------------
-const I18N = {
-  en: {
-    app_title: "NIC FleetHub",
-    app_subtitle: "Enterprise Fleet, Workshop & Inventory Management Console",
-    global_search: "Global Search: Reg No, Asset ID, VIN, Chassis, Engine, Serial, Model, Operator...",
-    alerts: "Alerts",
-    sign_out: "Sign Out",
-    sign_in: "Sign In",
-    username: "Username",
-    password: "Password",
-    back_to_site: "Back to Website",
-    back: "← Back",
-    submit: "Submit",
-    cancel: "Cancel",
-    close: "Close",
-    edit: "Edit",
-    archive: "Archive Asset",
-    restore: "Restore Asset",
-    print_history: "Print Full History",
-    actions: "Actions",
-    status: "Status",
-    priority: "Priority",
-    date: "Date",
-    details: "Details",
-    all_healthy: "All healthy",
-    cards_view: "Cards",
-    table_view: "Table",
-    more_details: "More Details ▾",
-    hide_details: "Hide Details ▴",
-    all_kpis: "Show All Metrics ▾",
-    collapse_kpis: "Show Fewer Metrics ▴",
-    quick_search: "Search fleet or inventory...",
-    menu: "Menu",
-    more_modules: "More Modules",
-    install_app: "📱 Install FleetHub App",
-    // Nav items
-    nav_dash: "Dashboard",
-    nav_assets: "Assets",
-    nav_comp: "Complaints",
-    nav_wo: "Work Orders",
-    nav_parts: "Inventory",
-    nav_pur: "Purchases",
-    nav_sup: "Suppliers",
-    nav_exp: "Expenses",
-    nav_hist: "Historical Records",
-    nav_reports: "Reports",
-    nav_ws: "Worksites",
-    nav_admin: "Users & Backups",
-    // Dashboard KPIs
-    kpi_reg_fleet: "Total Registered Fleet",
-    kpi_active: "Active In Service",
-    kpi_repair: "Under Repair",
-    kpi_out_service: "Out of Service",
-    kpi_open_wo: "Open Work Orders",
-    kpi_waiting_parts: "Waiting for Parts / Purchase",
-    kpi_pending_insp: "Pending Inspection",
-    kpi_new_comp: "New Complaints",
-    kpi_low_stock: "Low Stock Alerts",
-    kpi_pending_pur: "Pending Purchases",
-    kpi_exp_docs: "Expiring Documents",
-    kpi_suppliers: "Registered Suppliers",
-    kpi_hist_records: "Digitized Historical Records",
-    monthly_trend: "Maintenance Expenses (Monthly Trend)",
-    total_maint_spend: "Total Recorded Maintenance Expenditure:",
-    cat_distribution: "Fleet Category Distribution",
-    recent_operations: "Recent Maintenance Operations",
-    view_alert_center: "View Alert Center →",
-    attention_req: "Attention Required:",
-    // Voice - Strictly English, Hindi, Arabic -> English
-    voice_rec: "🎙️ Multilingual Voice Recognition (English / हिन्दी / العربية)",
-    voice_start: "🎙️ Start Voice Recording",
-    voice_stop: "⏹️ Stop & Process",
-    voice_pause: "⏸️ Pause",
-    voice_resume: "▶️ Resume",
-    voice_rerecord: "🔄 Re-record",
-    voice_discard: "✕ Discard",
-    voice_apply: "✓ Apply English to Form",
-    voice_upload: "📁 Upload Audio",
-    voice_instruction: "Speak in English, Hindi, or Arabic. The system automatically detects the language and converts Hindi & Arabic into clear English.",
-    voice_rec_active: "🔴 Recording in progress... Speak now in English, Hindi or Arabic",
-    voice_processing: "Processing speech & detecting language...",
-    voice_translating: "Translating to English...",
-    voice_success: "Transcription & English translation completed.",
-    voice_failed: "Speech recognition failed. Please try again.",
-    voice_orig: "Spoken Original Transcript:",
-    voice_trans: "English Translation (Editable Review):",
-    voice_detected_lang: "Detected Language:",
-    // AI Document Scanner & Auto-Fill
-    doc_ai_title: "AI Multilingual Document Detection & Auto-Fill",
-    doc_ai_step_uploaded: "📄 Uploaded",
-    doc_ai_step_lang: "🌐 Language",
-    doc_ai_step_ocr: "🔍 Read & OCR",
-    doc_ai_step_fill: "⚡ Auto-Fill",
-    doc_ai_detecting: "Detecting language & extracting fields...",
-    doc_ai_ready: "Fields auto-filled. Please review and edit before saving.",
-    doc_ai_verified: "✓ Calculations Verified",
-    // Status Chips
-    st_active: "Active",
-    st_under_repair: "Under Repair",
-    st_out_of_service: "Out of Service",
-    st_new: "New",
-    st_approved: "Approved",
-    st_rejected: "Rejected",
-    st_in_progress: "In Progress",
-    st_completed: "Completed",
-    st_released: "Released",
-    st_verified: "Verified",
-    st_unverified: "Unverified",
-    // Kuwait Specific
-    plate_category: "Kuwait Plate Category",
-    daftar_expiry: "Traffic Reg Expiry (Daftar)",
-    fahs_expiry: "Technical Inspection (Fahs Fanni)",
-    governorate: "Kuwait Governorate",
-    paci_no: "Kuwait PACI Number",
-    civil_id: "Civil ID",
-    transfer_asset: "Transfer Worksite",
-    curr_kwd: "Kuwaiti Dinar (KWD)"
-  },
-  hi: {
-    app_title: "एनआईसी फ्लीटहब",
-    app_subtitle: "फ्लीट, वर्कशॉप, स्पेयर पार्ट्स एवं मेंटेनेंस प्रबंधन कंसोल",
-    global_search: "ग्लोबल सर्च: वाहन नंबर, आईडी, चेसिस, इंजन, सीरियल, मॉडल...",
-    alerts: "अलर्ट्स",
-    sign_out: "साइन आउट",
-    sign_in: "साइन इन",
-    username: "यूज़रनेम",
-    password: "पासवर्ड",
-    back_to_site: "वेबसाइट पर वापस जाएं",
-    back: "← पीछे",
-    submit: "सबमिट करें",
-    cancel: "रद्द करें",
-    close: "बंद करें",
-    edit: "संपादित करें",
-    archive: "आर्काइव करें",
-    restore: "पुनर्स्थापित करें",
-    print_history: "पूरा इतिहास प्रिंट करें",
-    actions: "कार्रवाई",
-    status: "स्थिति",
-    priority: "प्राथमिकता",
-    date: "दिनांक",
-    details: "विवरण",
-    all_healthy: "सब सामान्य है",
-    cards_view: "कार्ड्स",
-    table_view: "तालिका",
-    more_details: "अधिक विवरण ▾",
-    hide_details: "कम विवरण ▴",
-    all_kpis: "सभी मेट्रिक्स देखें ▾",
-    collapse_kpis: "कम मेट्रिक्स देखें ▴",
-    quick_search: "खोजें...",
-    menu: "मेनू",
-    more_modules: "अन्य मॉड्यूल",
-    install_app: "📱 ऐप इंस्टॉल करें",
-    nav_dash: "डैशबोर्ड",
-    nav_assets: "वाहन एवं मशीनरी",
-    nav_comp: "शिकायतें व ब्रेकडाउन",
-    nav_wo: "वर्क ऑर्डर्स",
-    nav_parts: "इन्वेंट्री व पार्ट्स",
-    nav_pur: "बाहरी खरीद",
-    nav_sup: "आपूर्तिकर्ता",
-    nav_exp: "रखरखाव खर्च",
-    nav_hist: "पुराने कागजी रिकॉर्ड",
-    nav_reports: "रिपोर्ट्स",
-    nav_ws: "कार्यस्थल",
-    nav_admin: "यूज़र्स व बैकअप",
-    kpi_reg_fleet: "कुल पंजीकृत फ्लीट",
-    kpi_active: "सक्रिय वाहन",
-    kpi_repair: "मरम्मत अधीन",
-    kpi_out_service: "सेवा से बाहर",
-    kpi_open_wo: "खुले वर्क ऑर्डर्स",
-    kpi_waiting_parts: "पार्ट्स हेतु प्रतीक्षारत",
-    kpi_pending_insp: "निरीक्षण हेतु लंबित",
-    kpi_new_comp: "नई शिकायतें",
-    kpi_low_stock: "कम स्टॉक चेतावनी",
-    kpi_pending_pur: "लंबित खरीद अनुरोध",
-    kpi_exp_docs: "समाप्त होने वाले दस्तावेज",
-    kpi_suppliers: "पंजीकृत सप्लायर्स",
-    kpi_hist_records: "डिजिटाइज्ड पुराने रिकॉर्ड",
-    monthly_trend: "मासिक रखरखाव व्यय रुझान",
-    total_maint_spend: "कुल दर्ज रखरखाव व्यय:",
-    cat_distribution: "फ्लीट श्रेणी वितरण",
-    recent_operations: "हालिया रखरखाव गतिविधियां",
-    view_alert_center: "अलर्ट केंद्र देखें →",
-    attention_req: "ध्यान देने योग्य:",
-    voice_rec: "🎙️ बहुभाषी वॉइस पहचान (English / हिन्दी / العربية)",
-    voice_start: "🎙️ रिकॉर्डिंग शुरू करें",
-    voice_stop: "⏹️ रोकें एवं अनुवाद करें",
-    voice_pause: "⏸️ रोकें",
-    voice_resume: "▶️ जारी रखें",
-    voice_rerecord: "🔄 पुनः रिकॉर्ड करें",
-    voice_discard: "✕ रद्द करें",
-    voice_apply: "✓ अंग्रेजी अनुवाद फॉर्म में लागू करें",
-    voice_upload: "📁 ऑडियो अपलोड करें",
-    voice_instruction: "हिन्दी, अरबी या अंग्रेजी में बोलें। सॉफ्टवेयर आपकी आवाज का स्वतः अंग्रेजी में अनुवाद करेगा।",
-    voice_rec_active: "🔴 रिकॉर्डिंग चालू... बोलें",
-    voice_processing: "भाषा की पहचान की जा रही है...",
-    voice_translating: "अंग्रेजी में अनुवाद हो रहा है...",
-    voice_success: "ट्रांसक्रिप्शन एवं अंग्रेजी अनुवाद पूर्ण।",
-    voice_failed: "पहचान विफल रही। कृपया पुनः प्रयास करें।",
-    voice_orig: "बोला गया मूल विवरण:",
-    voice_trans: "अंग्रेजी अनुवाद (समीक्षा एवं संपादन):",
-    voice_detected_lang: "पहचानी गई भाषा:",
-    doc_ai_title: "एआई बहुभाषी दस्तावेज पहचान एवं स्वतः फॉर्म-भरण",
-    doc_ai_step_uploaded: "📄 अपलोड हुआ",
-    doc_ai_step_lang: "🌐 भाषा",
-    doc_ai_step_ocr: "🔍 ओसीआर एवं वाचन",
-    doc_ai_step_fill: "⚡ स्वतः भरें",
-    doc_ai_detecting: "भाषा की पहचान एवं डेटा निकाला जा रहा है...",
-    doc_ai_ready: "फॉर्म फ़ील्ड स्वतः भर गए हैं। कृपया समीक्षा करें।",
-    doc_ai_verified: "✓ गणनाएं सत्यापित (मात्रा × दर = कुल)",
-    st_active: "सक्रिय",
-    st_under_repair: "मरम्मत में",
-    st_out_of_service: "बंद",
-    st_new: "नया",
-    st_approved: "स्वीकृत",
-    st_rejected: "अस्वीकृत",
-    st_in_progress: "प्रगति पर",
-    st_completed: "पूर्ण",
-    st_released: "रिलीज्ड",
-    st_verified: "सत्यापित",
-    st_unverified: "असत्यापित",
-    // Kuwait Specific
-    plate_category: "कुवैत नंबर प्लेट श्रेणी",
-    daftar_expiry: "पंजीकरण समाप्ति (दफ्तर)",
-    fahs_expiry: "तकनीकी निरीक्षण (फहस फन्नी)",
-    governorate: "कुवैत प्रान्त (गवर्नरेट)",
-    paci_no: "कुवैत पाकी (PACI) नंबर",
-    civil_id: "सिविल आईडी",
-    transfer_asset: "कार्यस्थल स्थानांतरण",
-    curr_kwd: "कुवैती दिनार (KWD)"
-  },
-  ar: {
-    app_title: "إن آي سي فليت هب",
-    app_subtitle: "نظام إدارة الأسطول والمعدات الثقيلة والورشة والمخزون",
-    global_search: "البحث الشامل: رقم اللوحة، رمز المعدة، رقم الشاسيه، المحرك، الرقم التسلسلي...",
-    alerts: "التنبيهات",
-    sign_out: "تسجيل الخروج",
-    sign_in: "تسجيل الدخول",
-    username: "اسم المستخدم",
-    password: "كلمة المرور",
-    back_to_site: "العودة للموقع",
-    back: "→ رجوع",
-    submit: "حفظ وإرسال",
-    cancel: "إلغاء",
-    close: "إغلاق",
-    edit: "تعديل",
-    archive: "أرشفة",
-    restore: "استعادة",
-    print_history: "طباعة السجل الكامل",
-    actions: "الإجراءات",
-    status: "الحالة",
-    priority: "الأولوية",
-    date: "التاريخ",
-    details: "التفاصيل",
-    all_healthy: "الوضع ممتاز",
-    cards_view: "بطاقات",
-    table_view: "جدول",
-    more_details: "تفاصيل إضافية ▾",
-    hide_details: "إخفاء التفاصيل ▴",
-    all_kpis: "عرض كافة المؤشرات ▾",
-    collapse_kpis: "عرض أقل ▴",
-    quick_search: "بحث في الأسطول...",
-    menu: "القائمة",
-    more_modules: "المزيد من الأقسام",
-    install_app: "📱 تثبيت التطبيق",
-    nav_dash: "لوحة التحكم",
-    nav_assets: "الأسطول والمعدات",
-    nav_comp: "البلاغات والأعطال",
-    nav_wo: "أوامر العمل",
-    nav_parts: "المستودع وقطع الغيار",
-    nav_pur: "المشتريات الخارجية",
-    nav_sup: "الموردين والورش",
-    nav_exp: "تكاليف الصيانة",
-    nav_hist: "السجلات الورقية السابقة",
-    nav_reports: "التقارير",
-    nav_ws: "مواقع العمل",
-    nav_admin: "المستخدمين والنسخ الاحتياطي",
-    kpi_reg_fleet: "إجمالي الأسطول المسجل",
-    kpi_active: "معدات في الخدمة",
-    kpi_repair: "تحت الصيانة",
-    kpi_out_service: "خارج الخدمة",
-    kpi_open_wo: "أوامر العمل المفتوحة",
-    kpi_waiting_parts: "في انتظار قطع الغيار",
-    kpi_pending_insp: "في انتظار الفحص النهائي",
-    kpi_new_comp: "شكاوى وأعطال جديدة",
-    kpi_low_stock: "تنبيهات نقص المخزون",
-    kpi_pending_pur: "طلبات شراء معلقة",
-    kpi_exp_docs: "وثائق قاربت على الانتهاء",
-    kpi_suppliers: "الموردين المعتمدين",
-    kpi_hist_records: "سجلات ورقية مرقمنة",
-    monthly_trend: "المصروفات الشهرية للصيانة",
-    total_maint_spend: "إجمالي مصروفات الصيانة المسجلة:",
-    cat_distribution: "توزيع فئات الأسطول",
-    recent_operations: "أحدث عمليات الورشة",
-    view_alert_center: "عرض مركز التنبيهات ←",
-    attention_req: "ملاحظات هامة تتطلب تدخلاً:",
-    voice_rec: "🎙️ التعرف الصوتي الذكي (English / العربية / हिन्दी)",
-    voice_start: "🎙️ بدء التسجيل الصوتي",
-    voice_stop: "⏹️ إنهاء ومعالجة الصوت",
-    voice_pause: "⏸️ إيقاف مؤقت",
-    voice_resume: "▶️ استئناف",
-    voice_rerecord: "🔄 إعادة التسجيل",
-    voice_discard: "✕ إلغاء",
-    voice_apply: "✓ تطبيق النص الإنجليزي في النموذج",
-    voice_upload: "📁 رفع ملف صوتي",
-    voice_instruction: "تحدث بالعربية أو الإنجليزية أو الهندية. يتعرف النظام تلقائياً على اللغة ويترجم العربية والهندية مباشرة إلى إنجليزية واضحة.",
-    voice_rec_active: "🔴 جاري التسجيل الصوتي... تحدث الآن",
-    voice_processing: "جاري تحليل الصوت وتحديد اللغة...",
-    voice_translating: "جاري الترجمة الفورية إلى الإنجليزية...",
-    voice_success: "اكتمل التعرف والترجمة إلى الإنجليزية بنجاح.",
-    voice_failed: "فشل التعرف على الصوت. يرجى المحاولة مجدداً.",
-    voice_orig: "النص المنطوق الأصلي:",
-    voice_trans: "الترجمة الإنجليزية (مراجعة وتعديل):",
-    voice_detected_lang: "اللغة المكتشفة تلقائياً:",
-    doc_ai_title: "التعرف الذكي على الوثائق والتعبئة التلقائية",
-    doc_ai_step_uploaded: "📄 تم الرفع",
-    doc_ai_step_lang: "🌐 لغة المستند",
-    doc_ai_step_ocr: "🔍 قراءة وتحليل",
-    doc_ai_step_fill: "⚡ تعبئة تلقائية",
-    doc_ai_detecting: "جاري اكتشاف اللغة واستخراج حقول الفاتورة...",
-    doc_ai_ready: "تمت تعبئة الحقول تلقائياً. يرجى المراجعة والاعتماد.",
-    doc_ai_verified: "✓ الحسابات الرياضية مدققة ومطابقة",
-    st_active: "نشط بالخدمة",
-    st_under_repair: "تحت الإصلاح",
-    st_out_of_service: "متوقف",
-    st_new: "جديد",
-    st_approved: "معتمد",
-    st_rejected: "مرفوض",
-    st_in_progress: "قيد التنفيذ",
-    st_completed: "مكتمل",
-    st_released: "تم الإفراج",
-    st_verified: "موثق بالكامل",
-    st_unverified: "بيانات غير مكتملة",
-    // Kuwait Specific
-    plate_category: "نوع لوحة المركبة (الكويت)",
-    daftar_expiry: "انتهاء دفتر المركبة (المرور)",
-    fahs_expiry: "الفحص الفني الدوري",
-    governorate: "المحافظة",
-    paci_no: "الرقم الآلي للعنوان (PACI)",
-    civil_id: "الرقم المدني",
-    transfer_asset: "نقل موقع العمل",
-    curr_kwd: "دينار كويتي (د.ك)"
-  }
-};
-
-const t = (k, fallback = "") => (I18N[CUR_LANG] && I18N[CUR_LANG][k]) || (I18N.en && I18N.en[k]) || fallback || k;
-
-function applyLanguageLayout() {
-  document.documentElement.lang = CUR_LANG;
-  if (CUR_LANG === "ar") {
-    document.documentElement.dir = "rtl";
-    document.body.classList.add("rtl-mode");
-  } else {
-    document.documentElement.dir = "ltr";
-    document.body.classList.remove("rtl-mode");
-  }
-}
-applyLanguageLayout();
-
-const can = p => !ME ? false : (ME.perms.includes("*") || ME.perms.includes(p));
-const any = (...p) => p.some(can);
-
-const toast = msg => {
-  const e = $("#t");
-  e.textContent = msg;
-  e.classList.add("on");
-  clearTimeout(toast.i);
-  toast.i = setTimeout(() => e.classList.remove("on"), 3200);
-};
-
-async function api(p, o) {
-  let cleanPath = p.startsWith("/api/") ? p.substring(4) : (p.startsWith("/api") ? p.substring(4) : p);
-  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-  const token = localStorage.getItem("fleethub_token");
-  const headers = { ...(o?.headers || {}) };
-  if (token && cleanPath !== "/login") headers["Authorization"] = "Bearer " + token;
-  const r = await fetch(API_BASE + "/api" + cleanPath, { credentials: "include", ...o, headers });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    if (r.status === 401) {
-      localStorage.removeItem("fleethub_token");
-      if (ME) {
-        ME = null;
-        boot();
-      }
+(() => {
+  const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
+  const R = $("#root");
+  const API_BASE = window.FLEETHUB_API_BASE || (document.querySelector('meta[name="fleethub-api-base"]')?.content) || "";
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const rs = (n, cur = "KWD") => {
+    const num = Number(n || 0);
+    if (cur === "KWD") {
+      const formatted = num.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      return CUR_LANG === "ar" ? `${formatted} د.ك` : `${formatted} KWD`;
     }
-    throw Error(j.error || r.statusText || "Request failed");
+    const formatted = num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${formatted} ${cur}`;
+  };
+
+  let ME = null, HIST = [], LIVE_ALERTS = { total: 0 };
+  let CUR_LANG = localStorage.getItem("fleethub_lang") || "en";
+
+  // ---------------- 1. MULTILINGUAL TRANSLATIONS (EN, HI, AR ONLY) ----------------
+  const I18N = {
+    en: {
+      app_title: "NIC FleetHub",
+      app_subtitle: "Enterprise Fleet, Workshop & Inventory Management Console",
+      global_search: "Global Search: Reg No, Asset ID, VIN, Chassis, Engine, Serial, Model, Operator...",
+      alerts: "Alerts",
+      sign_out: "Sign Out",
+      sign_in: "Sign In",
+      username: "Username",
+      password: "Password",
+      back_to_site: "Back to Website",
+      back: "← Back",
+      submit: "Submit",
+      cancel: "Cancel",
+      close: "Close",
+      edit: "Edit",
+      archive: "Archive Asset",
+      restore: "Restore Asset",
+      print_history: "Print Full History",
+      actions: "Actions",
+      status: "Status",
+      priority: "Priority",
+      date: "Date",
+      details: "Details",
+      all_healthy: "All healthy",
+      cards_view: "Cards",
+      table_view: "Table",
+      more_details: "More Details ▾",
+      hide_details: "Hide Details ▴",
+      all_kpis: "Show All Metrics ▾",
+      collapse_kpis: "Show Fewer Metrics ▴",
+      quick_search: "Search fleet or inventory...",
+      menu: "Menu",
+      more_modules: "More Modules",
+      install_app: "📱 Install FleetHub App",
+      // Nav items
+      nav_dash: "Dashboard",
+      nav_assets: "Assets",
+      nav_comp: "Complaints",
+      nav_wo: "Work Orders",
+      nav_parts: "Inventory",
+      nav_pur: "Purchases",
+      nav_sup: "Suppliers",
+      nav_exp: "Expenses",
+      nav_hist: "Historical Records",
+      nav_reports: "Reports",
+      nav_ws: "Worksites",
+      nav_admin: "Users & Backups",
+      // Dashboard KPIs
+      kpi_reg_fleet: "Total Registered Fleet",
+      kpi_active: "Active In Service",
+      kpi_repair: "Under Repair",
+      kpi_out_service: "Out of Service",
+      kpi_open_wo: "Open Work Orders",
+      kpi_waiting_parts: "Waiting for Parts / Purchase",
+      kpi_pending_insp: "Pending Inspection",
+      kpi_new_comp: "New Complaints",
+      kpi_low_stock: "Low Stock Alerts",
+      kpi_pending_pur: "Pending Purchases",
+      kpi_exp_docs: "Expiring Documents",
+      kpi_suppliers: "Registered Suppliers",
+      kpi_hist_records: "Digitized Historical Records",
+      monthly_trend: "Maintenance Expenses (Monthly Trend)",
+      total_maint_spend: "Total Recorded Maintenance Expenditure:",
+      cat_distribution: "Fleet Category Distribution",
+      recent_operations: "Recent Maintenance Operations",
+      view_alert_center: "View Alert Center →",
+      attention_req: "Attention Required:",
+      // Voice - Strictly English, Hindi, Arabic -> English
+      voice_rec: "🎙️ Multilingual Voice Recognition (English / हिन्दी / العربية)",
+      voice_start: "🎙️ Start Voice Recording",
+      voice_stop: "⏹️ Stop & Process",
+      voice_pause: "⏸️ Pause",
+      voice_resume: "▶️ Resume",
+      voice_rerecord: "🔄 Re-record",
+      voice_discard: "✕ Discard",
+      voice_apply: "✓ Apply English to Form",
+      voice_upload: "📁 Upload Audio",
+      voice_instruction: "Speak in English, Hindi, or Arabic. The system automatically detects the language and converts Hindi & Arabic into clear English.",
+      voice_rec_active: "🔴 Recording in progress... Speak now in English, Hindi or Arabic",
+      voice_processing: "Processing speech & detecting language...",
+      voice_translating: "Translating to English...",
+      voice_success: "Transcription & English translation completed.",
+      voice_failed: "Speech recognition failed. Please try again.",
+      voice_orig: "Spoken Original Transcript:",
+      voice_trans: "English Translation (Editable Review):",
+      voice_detected_lang: "Detected Language:",
+      // AI Document Scanner & Auto-Fill
+      doc_ai_title: "AI Multilingual Document Detection & Auto-Fill",
+      doc_ai_step_uploaded: "📄 Uploaded",
+      doc_ai_step_lang: "🌐 Language",
+      doc_ai_step_ocr: "🔍 Read & OCR",
+      doc_ai_step_fill: "⚡ Auto-Fill",
+      doc_ai_detecting: "Detecting language & extracting fields...",
+      doc_ai_ready: "Fields auto-filled. Please review and edit before saving.",
+      doc_ai_verified: "✓ Calculations Verified",
+      // Status Chips
+      st_active: "Active",
+      st_under_repair: "Under Repair",
+      st_out_of_service: "Out of Service",
+      st_new: "New",
+      st_approved: "Approved",
+      st_rejected: "Rejected",
+      st_in_progress: "In Progress",
+      st_completed: "Completed",
+      st_released: "Released",
+      st_verified: "Verified",
+      st_unverified: "Unverified",
+      // Kuwait Specific
+      plate_category: "Kuwait Plate Category",
+      daftar_expiry: "Traffic Reg Expiry (Daftar)",
+      fahs_expiry: "Technical Inspection (Fahs Fanni)",
+      governorate: "Kuwait Governorate",
+      paci_no: "Kuwait PACI Number",
+      civil_id: "Civil ID",
+      transfer_asset: "Transfer Worksite",
+      curr_kwd: "Kuwaiti Dinar (KWD)"
+    },
+    hi: {
+      app_title: "एनआईसी फ्लीटहब",
+      app_subtitle: "फ्लीट, वर्कशॉप, स्पेयर पार्ट्स एवं मेंटेनेंस प्रबंधन कंसोल",
+      global_search: "ग्लोबल सर्च: वाहन नंबर, आईडी, चेसिस, इंजन, सीरियल, मॉडल...",
+      alerts: "अलर्ट्स",
+      sign_out: "साइन आउट",
+      sign_in: "साइन इन",
+      username: "यूज़रनेम",
+      password: "पासवर्ड",
+      back_to_site: "वेबसाइट पर वापस जाएं",
+      back: "← पीछे",
+      submit: "सबमिट करें",
+      cancel: "रद्द करें",
+      close: "बंद करें",
+      edit: "संपादित करें",
+      archive: "आर्काइव करें",
+      restore: "पुनर्स्थापित करें",
+      print_history: "पूरा इतिहास प्रिंट करें",
+      actions: "कार्रवाई",
+      status: "स्थिति",
+      priority: "प्राथमिकता",
+      date: "दिनांक",
+      details: "विवरण",
+      all_healthy: "सब सामान्य है",
+      cards_view: "कार्ड्स",
+      table_view: "तालिका",
+      more_details: "अधिक विवरण ▾",
+      hide_details: "कम विवरण ▴",
+      all_kpis: "सभी मेट्रिक्स देखें ▾",
+      collapse_kpis: "कम मेट्रिक्स देखें ▴",
+      quick_search: "खोजें...",
+      menu: "मेनू",
+      more_modules: "अन्य मॉड्यूल",
+      install_app: "📱 ऐप इंस्टॉल करें",
+      nav_dash: "डैशबोर्ड",
+      nav_assets: "वाहन एवं मशीनरी",
+      nav_comp: "शिकायतें व ब्रेकडाउन",
+      nav_wo: "वर्क ऑर्डर्स",
+      nav_parts: "इन्वेंट्री व पार्ट्स",
+      nav_pur: "बाहरी खरीद",
+      nav_sup: "आपूर्तिकर्ता",
+      nav_exp: "रखरखाव खर्च",
+      nav_hist: "पुराने कागजी रिकॉर्ड",
+      nav_reports: "रिपोर्ट्स",
+      nav_ws: "कार्यस्थल",
+      nav_admin: "यूज़र्स व बैकअप",
+      kpi_reg_fleet: "कुल पंजीकृत फ्लीट",
+      kpi_active: "सक्रिय वाहन",
+      kpi_repair: "मरम्मत अधीन",
+      kpi_out_service: "सेवा से बाहर",
+      kpi_open_wo: "खुले वर्क ऑर्डर्स",
+      kpi_waiting_parts: "पार्ट्स हेतु प्रतीक्षारत",
+      kpi_pending_insp: "निरीक्षण हेतु लंबित",
+      kpi_new_comp: "नई शिकायतें",
+      kpi_low_stock: "कम स्टॉक चेतावनी",
+      kpi_pending_pur: "लंबित खरीद अनुरोध",
+      kpi_exp_docs: "समाप्त होने वाले दस्तावेज",
+      kpi_suppliers: "पंजीकृत सप्लायर्स",
+      kpi_hist_records: "डिजिटाइज्ड पुराने रिकॉर्ड",
+      monthly_trend: "मासिक रखरखाव व्यय रुझान",
+      total_maint_spend: "कुल दर्ज रखरखाव व्यय:",
+      cat_distribution: "फ्लीट श्रेणी वितरण",
+      recent_operations: "हालिया रखरखाव गतिविधियां",
+      view_alert_center: "अलर्ट केंद्र देखें →",
+      attention_req: "ध्यान देने योग्य:",
+      voice_rec: "🎙️ बहुभाषी वॉइस पहचान (English / हिन्दी / العربية)",
+      voice_start: "🎙️ रिकॉर्डिंग शुरू करें",
+      voice_stop: "⏹️ रोकें एवं अनुवाद करें",
+      voice_pause: "⏸️ रोकें",
+      voice_resume: "▶️ जारी रखें",
+      voice_rerecord: "🔄 पुनः रिकॉर्ड करें",
+      voice_discard: "✕ रद्द करें",
+      voice_apply: "✓ अंग्रेजी अनुवाद फॉर्म में लागू करें",
+      voice_upload: "📁 ऑडियो अपलोड करें",
+      voice_instruction: "हिन्दी, अरबी या अंग्रेजी में बोलें। सॉफ्टवेयर आपकी आवाज का स्वतः अंग्रेजी में अनुवाद करेगा।",
+      voice_rec_active: "🔴 रिकॉर्डिंग चालू... बोलें",
+      voice_processing: "भाषा की पहचान की जा रही है...",
+      voice_translating: "अंग्रेजी में अनुवाद हो रहा है...",
+      voice_success: "ट्रांसक्रिप्शन एवं अंग्रेजी अनुवाद पूर्ण।",
+      voice_failed: "पहचान विफल रही। कृपया पुनः प्रयास करें।",
+      voice_orig: "बोला गया मूल विवरण:",
+      voice_trans: "अंग्रेजी अनुवाद (समीक्षा एवं संपादन):",
+      voice_detected_lang: "पहचानी गई भाषा:",
+      doc_ai_title: "एआई बहुभाषी दस्तावेज पहचान एवं स्वतः फॉर्म-भरण",
+      doc_ai_step_uploaded: "📄 अपलोड हुआ",
+      doc_ai_step_lang: "🌐 भाषा",
+      doc_ai_step_ocr: "🔍 ओसीआर एवं वाचन",
+      doc_ai_step_fill: "⚡ स्वतः भरें",
+      doc_ai_detecting: "भाषा की पहचान एवं डेटा निकाला जा रहा है...",
+      doc_ai_ready: "फॉर्म फ़ील्ड स्वतः भर गए हैं। कृपया समीक्षा करें।",
+      doc_ai_verified: "✓ गणनाएं सत्यापित (मात्रा × दर = कुल)",
+      st_active: "सक्रिय",
+      st_under_repair: "मरम्मत में",
+      st_out_of_service: "बंद",
+      st_new: "नया",
+      st_approved: "स्वीकृत",
+      st_rejected: "अस्वीकृत",
+      st_in_progress: "प्रगति पर",
+      st_completed: "पूर्ण",
+      st_released: "रिलीज्ड",
+      st_verified: "सत्यापित",
+      st_unverified: "असत्यापित",
+      // Kuwait Specific
+      plate_category: "कुवैत नंबर प्लेट श्रेणी",
+      daftar_expiry: "पंजीकरण समाप्ति (दफ्तर)",
+      fahs_expiry: "तकनीकी निरीक्षण (फहस फन्नी)",
+      governorate: "कुवैत प्रान्त (गवर्नरेट)",
+      paci_no: "कुवैत पाकी (PACI) नंबर",
+      civil_id: "सिविल आईडी",
+      transfer_asset: "कार्यस्थल स्थानांतरण",
+      curr_kwd: "कुवैती दिनार (KWD)"
+    },
+    ar: {
+      app_title: "إن آي سي فليت هب",
+      app_subtitle: "نظام إدارة الأسطول والمعدات الثقيلة والورشة والمخزون",
+      global_search: "البحث الشامل: رقم اللوحة، رمز المعدة، رقم الشاسيه، المحرك، الرقم التسلسلي...",
+      alerts: "التنبيهات",
+      sign_out: "تسجيل الخروج",
+      sign_in: "تسجيل الدخول",
+      username: "اسم المستخدم",
+      password: "كلمة المرور",
+      back_to_site: "العودة للموقع",
+      back: "→ رجوع",
+      submit: "حفظ وإرسال",
+      cancel: "إلغاء",
+      close: "إغلاق",
+      edit: "تعديل",
+      archive: "أرشفة",
+      restore: "استعادة",
+      print_history: "طباعة السجل الكامل",
+      actions: "الإجراءات",
+      status: "الحالة",
+      priority: "الأولوية",
+      date: "التاريخ",
+      details: "التفاصيل",
+      all_healthy: "الوضع ممتاز",
+      cards_view: "بطاقات",
+      table_view: "جدول",
+      more_details: "تفاصيل إضافية ▾",
+      hide_details: "إخفاء التفاصيل ▴",
+      all_kpis: "عرض كافة المؤشرات ▾",
+      collapse_kpis: "عرض أقل ▴",
+      quick_search: "بحث في الأسطول...",
+      menu: "القائمة",
+      more_modules: "المزيد من الأقسام",
+      install_app: "📱 تثبيت التطبيق",
+      nav_dash: "لوحة التحكم",
+      nav_assets: "الأسطول والمعدات",
+      nav_comp: "البلاغات والأعطال",
+      nav_wo: "أوامر العمل",
+      nav_parts: "المستودع وقطع الغيار",
+      nav_pur: "المشتريات الخارجية",
+      nav_sup: "الموردين والورش",
+      nav_exp: "تكاليف الصيانة",
+      nav_hist: "السجلات الورقية السابقة",
+      nav_reports: "التقارير",
+      nav_ws: "مواقع العمل",
+      nav_admin: "المستخدمين والنسخ الاحتياطي",
+      kpi_reg_fleet: "إجمالي الأسطول المسجل",
+      kpi_active: "معدات في الخدمة",
+      kpi_repair: "تحت الصيانة",
+      kpi_out_service: "خارج الخدمة",
+      kpi_open_wo: "أوامر العمل المفتوحة",
+      kpi_waiting_parts: "في انتظار قطع الغيار",
+      kpi_pending_insp: "في انتظار الفحص النهائي",
+      kpi_new_comp: "شكاوى وأعطال جديدة",
+      kpi_low_stock: "تنبيهات نقص المخزون",
+      kpi_pending_pur: "طلبات شراء معلقة",
+      kpi_exp_docs: "وثائق قاربت على الانتهاء",
+      kpi_suppliers: "الموردين المعتمدين",
+      kpi_hist_records: "سجلات ورقية مرقمنة",
+      monthly_trend: "المصروفات الشهرية للصيانة",
+      total_maint_spend: "إجمالي مصروفات الصيانة المسجلة:",
+      cat_distribution: "توزيع فئات الأسطول",
+      recent_operations: "أحدث عمليات الورشة",
+      view_alert_center: "عرض مركز التنبيهات ←",
+      attention_req: "ملاحظات هامة تتطلب تدخلاً:",
+      voice_rec: "🎙️ التعرف الصوتي الذكي (English / العربية / हिन्दी)",
+      voice_start: "🎙️ بدء التسجيل الصوتي",
+      voice_stop: "⏹️ إنهاء ومعالجة الصوت",
+      voice_pause: "⏸️ إيقاف مؤقت",
+      voice_resume: "▶️ استئناف",
+      voice_rerecord: "🔄 إعادة التسجيل",
+      voice_discard: "✕ إلغاء",
+      voice_apply: "✓ تطبيق النص الإنجليزي في النموذج",
+      voice_upload: "📁 رفع ملف صوتي",
+      voice_instruction: "تحدث بالعربية أو الإنجليزية أو الهندية. يتعرف النظام تلقائياً على اللغة ويترجم العربية والهندية مباشرة إلى إنجليزية واضحة.",
+      voice_rec_active: "🔴 جاري التسجيل الصوتي... تحدث الآن",
+      voice_processing: "جاري تحليل الصوت وتحديد اللغة...",
+      voice_translating: "جاري الترجمة الفورية إلى الإنجليزية...",
+      voice_success: "اكتمل التعرف والترجمة إلى الإنجليزية بنجاح.",
+      voice_failed: "فشل التعرف على الصوت. يرجى المحاولة مجدداً.",
+      voice_orig: "النص المنطوق الأصلي:",
+      voice_trans: "الترجمة الإنجليزية (مراجعة وتعديل):",
+      voice_detected_lang: "اللغة المكتشفة تلقائياً:",
+      doc_ai_title: "التعرف الذكي على الوثائق والتعبئة التلقائية",
+      doc_ai_step_uploaded: "📄 تم الرفع",
+      doc_ai_step_lang: "🌐 لغة المستند",
+      doc_ai_step_ocr: "🔍 قراءة وتحليل",
+      doc_ai_step_fill: "⚡ تعبئة تلقائية",
+      doc_ai_detecting: "جاري اكتشاف اللغة واستخراج حقول الفاتورة...",
+      doc_ai_ready: "تمت تعبئة الحقول تلقائياً. يرجى المراجعة والاعتماد.",
+      doc_ai_verified: "✓ الحسابات الرياضية مدققة ومطابقة",
+      st_active: "نشط بالخدمة",
+      st_under_repair: "تحت الإصلاح",
+      st_out_of_service: "متوقف",
+      st_new: "جديد",
+      st_approved: "معتمد",
+      st_rejected: "مرفوض",
+      st_in_progress: "قيد التنفيذ",
+      st_completed: "مكتمل",
+      st_released: "تم الإفراج",
+      st_verified: "موثق بالكامل",
+      st_unverified: "بيانات غير مكتملة",
+      // Kuwait Specific
+      plate_category: "نوع لوحة المركبة (الكويت)",
+      daftar_expiry: "انتهاء دفتر المركبة (المرور)",
+      fahs_expiry: "الفحص الفني الدوري",
+      governorate: "المحافظة",
+      paci_no: "الرقم الآلي للعنوان (PACI)",
+      civil_id: "الرقم المدني",
+      transfer_asset: "نقل موقع العمل",
+      curr_kwd: "دينار كويتي (د.ك)"
+    }
+  };
+
+  const t = (k, fallback = "") => (I18N[CUR_LANG] && I18N[CUR_LANG][k]) || (I18N.en && I18N.en[k]) || fallback || k;
+
+  function applyLanguageLayout() {
+    document.documentElement.lang = CUR_LANG;
+    if (CUR_LANG === "ar") {
+      document.documentElement.dir = "rtl";
+      document.body.classList.add("rtl-mode");
+    } else {
+      document.documentElement.dir = "ltr";
+      document.body.classList.remove("rtl-mode");
+    }
   }
-  return j;
-}
+  applyLanguageLayout();
 
-const send = (m, p, o) => api(p, o instanceof FormData ? { method: m, body: o } : { method: m, headers: { "Content-Type": "application/json" }, body: JSON.stringify(o || {}) });
-const post = (p, o) => send("POST", p, o);
-const put = (p, o) => send("PUT", p, o);
-const fj = fd => {
-  const o = {};
-  fd.forEach((v, k) => { if (!(v instanceof File)) o[k] = v; });
-  return o;
-};
+  const can = p => !ME ? false : (ME.perms.includes("*") || ME.perms.includes(p));
+  const any = (...p) => p.some(can);
 
-const chip = s => {
-  const m = {
-    New: "c-reported", "Info Requested": "c-assigned", Approved: "c-verified", Rejected: "c-reported",
-    Active: "c-done", "Under Repair": "c-assigned", "Out of Service": "c-reported", Retired: "c-reported",
-    Released: "c-done", "In Progress": "c-in-progress", Completed: "c-done", Purchased: "c-done",
-    Requested: "c-assigned", "Waiting for Spare Parts": "c-assigned", "Waiting for External Purchase": "c-assigned",
-    "Pending Inspection": "c-verified", "Inspection Approved": "c-done", Verified: "c-done", Unverified: "c-reported"
+  const toast = msg => {
+    const e = $("#t");
+    e.textContent = msg;
+    e.classList.add("on");
+    clearTimeout(toast.i);
+    toast.i = setTimeout(() => e.classList.remove("on"), 3200);
   };
-  const labelMap = {
-    Active: t("st_active"), "Under Repair": t("st_under_repair"), "Out of Service": t("st_out_of_service"),
-    New: t("st_new"), Approved: t("st_approved"), Rejected: t("st_rejected"), "In Progress": t("st_in_progress"),
-    Completed: t("st_completed"), Released: t("st_released"), Verified: t("st_verified"), Unverified: t("st_unverified")
+
+  async function api(p, o) {
+    let cleanPath = p.startsWith("/api/") ? p.substring(4) : (p.startsWith("/api") ? p.substring(4) : p);
+    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+    const token = localStorage.getItem("fleethub_token");
+    const headers = { ...(o?.headers || {}) };
+    if (token && cleanPath !== "/login") headers["Authorization"] = "Bearer " + token;
+    const r = await fetch(API_BASE + "/api" + cleanPath, { credentials: "include", ...o, headers });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      if (r.status === 401) {
+        localStorage.removeItem("fleethub_token");
+        if (ME) {
+          ME = null;
+          boot();
+        }
+      }
+      throw Error(j.error || r.statusText || "Request failed");
+    }
+    return j;
+  }
+
+  const send = (m, p, o) => api(p, o instanceof FormData ? { method: m, body: o } : { method: m, headers: { "Content-Type": "application/json" }, body: JSON.stringify(o || {}) });
+  const post = (p, o) => send("POST", p, o);
+  const put = (p, o) => send("PUT", p, o);
+  const fj = fd => {
+    const o = {};
+    fd.forEach((v, k) => { if (!(v instanceof File)) o[k] = v; });
+    return o;
   };
-  return `<span class="chip ${m[s] || "c-verified"}">${esc(labelMap[s] || s)}</span>`;
-};
 
-// ---------------- 2. VOICE RECORDER & AUTOMATIC TRANSLATION MODULE ----------------
-let VOICE_STATE = {
-  mediaRecorder: null,
-  audioChunks: [],
-  recognition: null,
-  isRecording: false,
-  isPaused: false,
-  timerInterval: null,
-  seconds: 0,
-  targetInput: null,
-  transcript: "",
-  audioBlob: null
-};
+  const chip = s => {
+    const m = {
+      New: "c-reported", "Info Requested": "c-assigned", Approved: "c-verified", Rejected: "c-reported",
+      Active: "c-done", "Under Repair": "c-assigned", "Out of Service": "c-reported", Retired: "c-reported",
+      Released: "c-done", "In Progress": "c-in-progress", Completed: "c-done", Purchased: "c-done",
+      Requested: "c-assigned", "Waiting for Spare Parts": "c-assigned", "Waiting for External Purchase": "c-assigned",
+      "Pending Inspection": "c-verified", "Inspection Approved": "c-done", Verified: "c-done", Unverified: "c-reported"
+    };
+    const labelMap = {
+      Active: t("st_active"), "Under Repair": t("st_under_repair"), "Out of Service": t("st_out_of_service"),
+      New: t("st_new"), Approved: t("st_approved"), Rejected: t("st_rejected"), "In Progress": t("st_in_progress"),
+      Completed: t("st_completed"), Released: t("st_released"), Verified: t("st_verified"), Unverified: t("st_unverified")
+    };
+    return `<span class="chip ${m[s] || "c-verified"}">${esc(labelMap[s] || s)}</span>`;
+  };
 
-function setupVoiceRecorder(targetName, container) {
-  if (!container) return;
-  let activeLang = "auto"; // "auto", "en", "hi", "ar"
+  // ---------------- 2. VOICE RECORDER & AUTOMATIC TRANSLATION MODULE ----------------
+  let VOICE_STATE = {
+    mediaRecorder: null,
+    audioChunks: [],
+    recognition: null,
+    isRecording: false,
+    isPaused: false,
+    timerInterval: null,
+    seconds: 0,
+    targetInput: null,
+    transcript: "",
+    audioBlob: null
+  };
 
-  const widget = document.createElement("div");
-  widget.className = "voice-box";
-  widget.innerHTML = `
+  function setupVoiceRecorder(targetName, container) {
+    if (!container) return;
+    let activeLang = "auto"; // "auto", "en", "hi", "ar"
+
+    const widget = document.createElement("div");
+    widget.className = "voice-box";
+    widget.innerHTML = `
     <div class="voice-hdr">
       <span style="font-size:.85rem;font-weight:600">🎙️ ${t("voice_rec")}</span>
       <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
@@ -504,305 +504,305 @@ function setupVoiceRecorder(targetName, container) {
       </div>
     </div>
   `;
-  container.append(widget);
+    container.append(widget);
 
-  const btnRec = widget.querySelector("#vBtnRec");
-  const btnPause = widget.querySelector("#vBtnPause");
-  const btnReRec = widget.querySelector("#vBtnReRec");
-  const btnDiscard = widget.querySelector("#vBtnDiscard");
-  const btnApply = widget.querySelector("#vBtnApply");
-  const fileInput = widget.querySelector("#vFileInput");
-  const vTimer = widget.querySelector("#vTimer");
-  const vStatus = widget.querySelector("#vStatus");
-  const vPreview = widget.querySelector("#vPreview");
-  const vAudio = widget.querySelector("#vAudioPlayer");
-  const vLangBadge = widget.querySelector("#vLangBadge");
-  const vDurationBadge = widget.querySelector("#vDurationBadge");
-  const vOrigText = widget.querySelector("#vOrigText");
-  const vTransBox = widget.querySelector("#vTransBox");
-  const vTransText = widget.querySelector("#vTransText");
-  const vTransInput = widget.querySelector("#vTransInput");
+    const btnRec = widget.querySelector("#vBtnRec");
+    const btnPause = widget.querySelector("#vBtnPause");
+    const btnReRec = widget.querySelector("#vBtnReRec");
+    const btnDiscard = widget.querySelector("#vBtnDiscard");
+    const btnApply = widget.querySelector("#vBtnApply");
+    const fileInput = widget.querySelector("#vFileInput");
+    const vTimer = widget.querySelector("#vTimer");
+    const vStatus = widget.querySelector("#vStatus");
+    const vPreview = widget.querySelector("#vPreview");
+    const vAudio = widget.querySelector("#vAudioPlayer");
+    const vLangBadge = widget.querySelector("#vLangBadge");
+    const vDurationBadge = widget.querySelector("#vDurationBadge");
+    const vOrigText = widget.querySelector("#vOrigText");
+    const vTransBox = widget.querySelector("#vTransBox");
+    const vTransText = widget.querySelector("#vTransText");
+    const vTransInput = widget.querySelector("#vTransInput");
 
-  // Language pill selector
-  widget.querySelectorAll(".voice-lang-pill").forEach(pill => {
-    pill.onclick = () => {
-      widget.querySelectorAll(".voice-lang-pill").forEach(p => p.classList.remove("active"));
-      pill.classList.add("active");
-      activeLang = pill.getAttribute("data-lang");
-    };
-  });
+    // Language pill selector
+    widget.querySelectorAll(".voice-lang-pill").forEach(pill => {
+      pill.onclick = () => {
+        widget.querySelectorAll(".voice-lang-pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        activeLang = pill.getAttribute("data-lang");
+      };
+    });
 
-  async function processAudio(blob, initialTranscript = "") {
-    if (blob) {
-      vAudio.src = URL.createObjectURL(blob);
-    }
-    vStatus.textContent = t("voice_processing");
-
-    const fd = new FormData();
-    if (blob) {
-      fd.append("audio", blob, blob.name || "voice_recording.webm");
-    }
-    fd.append("transcript", initialTranscript);
-    fd.append("lang", activeLang === "auto" ? CUR_LANG : activeLang);
-    fd.append("duration", VOICE_STATE.seconds || 0);
-    fd.append("module", targetName === "remarks" ? "asset" : (targetName === "note" ? "work_order" : "complaint"));
-    fd.append("field_name", targetName);
-
-    try {
-      vStatus.textContent = t("voice_translating");
-      const res = await post("/voice/process", fd);
-      vStatus.textContent = t("voice_success");
-      vPreview.style.display = "grid";
-
-      const origText = res.original_transcript || initialTranscript || "(Spoken audio captured)";
-      const engText = res.english_translation || res.original_transcript || "";
-      const aiDesc = res.ai_description || engText;
-      const detLang = res.detected_lang || "en";
-      const detLangName = res.detected_lang_name || (detLang === "hi" ? "Hindi" : (detLang === "ar" ? "Arabic" : "English"));
-
-      vOrigText.textContent = origText;
-      if (detLang !== "en" && engText && engText !== origText) {
-        vTransBox.style.display = "block";
-        vTransText.textContent = engText;
-      } else {
-        vTransBox.style.display = "none";
+    async function processAudio(blob, initialTranscript = "") {
+      if (blob) {
+        vAudio.src = URL.createObjectURL(blob);
       }
-      vTransInput.value = aiDesc;
-
-      if (res.duration && res.duration > 0) {
-        vDurationBadge.style.display = "inline-flex";
-        vDurationBadge.textContent = `⏱️ ${Math.round(res.duration)}s`;
-      }
-
-      vLangBadge.textContent = `Detected: ${detLangName} (${detLang.toUpperCase()})`;
-      if (detLang === "hi") {
-        vLangBadge.style.background = "#fef3c7";
-        vLangBadge.style.color = "#92400e";
-      } else if (detLang === "ar") {
-        vLangBadge.style.background = "#dbeafe";
-        vLangBadge.style.color = "#1e40af";
-      } else {
-        vLangBadge.style.background = "#dcfce7";
-        vLangBadge.style.color = "#166534";
-      }
-
-      // Automatically fill the target input with AI description
-      const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
-      if (formInput && aiDesc) {
-        formInput.value = aiDesc;
-        formInput.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-
-      // Save hidden fields
-      let hLang = container.querySelector('input[name="original_lang"]');
-      if (!hLang) {
-        hLang = document.createElement("input");
-        hLang.type = "hidden";
-        hLang.name = "original_lang";
-        container.append(hLang);
-      }
-      hLang.value = detLang;
-
-      let hTrans = container.querySelector('input[name="original_transcript"]');
-      if (!hTrans) {
-        hTrans = document.createElement("input");
-        hTrans.type = "hidden";
-        hTrans.name = "original_transcript";
-        container.append(hTrans);
-      }
-      hTrans.value = origText;
-
-      let hDesc = container.querySelector('input[name="ai_description"]');
-      if (!hDesc) {
-        hDesc = document.createElement("input");
-        hDesc.type = "hidden";
-        hDesc.name = "ai_description";
-        container.append(hDesc);
-      }
-      hDesc.value = aiDesc;
-
-      let hVoice = container.querySelector('input[name="voice_doc_id"]');
-      if (!hVoice) {
-        hVoice = document.createElement("input");
-        hVoice.type = "hidden";
-        hVoice.name = "voice_doc_id";
-        container.append(hVoice);
-      }
-      if (res.audio_id) hVoice.value = res.audio_id;
-
-    } catch (err) {
-      vStatus.textContent = t("voice_failed") + " (" + err.message + ")";
-    }
-  }
-
-  // Apply button handler
-  btnApply.onclick = () => {
-    const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
-    if (formInput) {
-      formInput.value = vTransInput.value;
-      formInput.focus();
-      formInput.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-    let hDesc = container.querySelector('input[name="ai_description"]');
-    if (hDesc) hDesc.value = vTransInput.value;
-    vStatus.textContent = "✓ Applied description to form.";
-  };
-
-  // Discard button handler
-  btnDiscard.onclick = () => {
-    vPreview.style.display = "none";
-    vAudio.src = "";
-    vOrigText.textContent = "";
-    vTransInput.value = "";
-    vStatus.textContent = t("voice_instruction");
-  };
-
-  // Re-record handler
-  btnReRec.onclick = () => {
-    vPreview.style.display = "none";
-    vAudio.src = "";
-    vOrigText.textContent = "";
-    vTransInput.value = "";
-    vStatus.textContent = t("voice_instruction");
-    vTimer.style.display = "none";
-    vTimer.textContent = "00:00";
-    VOICE_STATE.seconds = 0;
-  };
-
-  // Upload file handler
-  fileInput.onchange = async () => {
-    if (fileInput.files && fileInput.files[0]) {
-      const f = fileInput.files[0];
-      await processAudio(f, "");
-    }
-  };
-
-  // Pause / Resume handler
-  btnPause.onclick = () => {
-    if (!VOICE_STATE.isRecording || !VOICE_STATE.mediaRecorder) return;
-    if (!VOICE_STATE.isPaused) {
-      try {
-        VOICE_STATE.mediaRecorder.pause();
-        VOICE_STATE.isPaused = true;
-        clearInterval(VOICE_STATE.timerInterval);
-        btnPause.innerHTML = `▶️ ${t("voice_resume")}`;
-        vStatus.textContent = "Recording paused.";
-      } catch (e) {}
-    } else {
-      try {
-        VOICE_STATE.mediaRecorder.resume();
-        VOICE_STATE.isPaused = false;
-        btnPause.innerHTML = `⏸️ ${t("voice_pause")}`;
-        vStatus.textContent = t("voice_rec_active");
-        VOICE_STATE.timerInterval = setInterval(() => {
-          VOICE_STATE.seconds++;
-          const mins = String(Math.floor(VOICE_STATE.seconds / 60)).padStart(2, "0");
-          const secs = String(VOICE_STATE.seconds % 60).padStart(2, "0");
-          vTimer.textContent = `${mins}:${secs}`;
-        }, 1000);
-      } catch (e) {}
-    }
-  };
-
-  // Record button handler
-  btnRec.onclick = async () => {
-    if (VOICE_STATE.isRecording) {
-      // STOP RECORDING
-      VOICE_STATE.isRecording = false;
-      VOICE_STATE.isPaused = false;
-      btnRec.classList.remove("recording");
-      btnRec.innerHTML = `🎙️ ${t("voice_start")}`;
-      btnPause.style.display = "none";
-      clearInterval(VOICE_STATE.timerInterval);
       vStatus.textContent = t("voice_processing");
 
-      if (VOICE_STATE.mediaRecorder && VOICE_STATE.mediaRecorder.state !== "inactive") {
-        VOICE_STATE.mediaRecorder.stop();
+      const fd = new FormData();
+      if (blob) {
+        fd.append("audio", blob, blob.name || "voice_recording.webm");
       }
-      if (VOICE_STATE.recognition) {
-        try { VOICE_STATE.recognition.stop(); } catch (e) {}
-      }
-    } else {
-      // START RECORDING
+      fd.append("transcript", initialTranscript);
+      fd.append("lang", activeLang === "auto" ? CUR_LANG : activeLang);
+      fd.append("duration", VOICE_STATE.seconds || 0);
+      fd.append("module", targetName === "remarks" ? "asset" : (targetName === "note" ? "work_order" : "complaint"));
+      fd.append("field_name", targetName);
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        VOICE_STATE.audioChunks = [];
-        VOICE_STATE.transcript = "";
-        VOICE_STATE.mediaRecorder = new MediaRecorder(stream);
+        vStatus.textContent = t("voice_translating");
+        const res = await post("/voice/process", fd);
+        vStatus.textContent = t("voice_success");
+        vPreview.style.display = "grid";
 
-        VOICE_STATE.mediaRecorder.ondataavailable = e => {
-          if (e.data.size > 0) VOICE_STATE.audioChunks.push(e.data);
-        };
+        const origText = res.original_transcript || initialTranscript || "(Spoken audio captured)";
+        const engText = res.english_translation || res.original_transcript || "";
+        const aiDesc = res.ai_description || engText;
+        const detLang = res.detected_lang || "en";
+        const detLangName = res.detected_lang_name || (detLang === "hi" ? "Hindi" : (detLang === "ar" ? "Arabic" : "English"));
 
-        VOICE_STATE.mediaRecorder.onstop = async () => {
-          stream.getTracks().forEach(track => track.stop());
-          const audioBlob = new Blob(VOICE_STATE.audioChunks, { type: "audio/webm" });
-          VOICE_STATE.audioBlob = audioBlob;
-          await processAudio(audioBlob, VOICE_STATE.transcript);
-        };
+        vOrigText.textContent = origText;
+        if (detLang !== "en" && engText && engText !== origText) {
+          vTransBox.style.display = "block";
+          vTransText.textContent = engText;
+        } else {
+          vTransBox.style.display = "none";
+        }
+        vTransInput.value = aiDesc;
 
-        // Browser speech recognition
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRec) {
-          VOICE_STATE.recognition = new SpeechRec();
-          VOICE_STATE.recognition.continuous = true;
-          VOICE_STATE.recognition.interimResults = true;
-          
-          let targetLangCode = "en-US";
-          if (activeLang === "hi") targetLangCode = "hi-IN";
-          else if (activeLang === "ar") targetLangCode = "ar-SA";
-          else if (activeLang === "en") targetLangCode = "en-US";
-          else if (CUR_LANG === "hi") targetLangCode = "hi-IN";
-          else if (CUR_LANG === "ar") targetLangCode = "ar-SA";
-
-          VOICE_STATE.recognition.lang = targetLangCode;
-          VOICE_STATE.recognition.onresult = event => {
-            let finalStr = "";
-            for (let i = 0; i < event.results.length; i++) {
-              finalStr += event.results[i][0].transcript + " ";
-            }
-            VOICE_STATE.transcript = finalStr.trim();
-            vStatus.textContent = "Listening (" + targetLangCode + "): " + VOICE_STATE.transcript;
-          };
-          try { VOICE_STATE.recognition.start(); } catch (e) {}
+        if (res.duration && res.duration > 0) {
+          vDurationBadge.style.display = "inline-flex";
+          vDurationBadge.textContent = `⏱️ ${Math.round(res.duration)}s`;
         }
 
-        VOICE_STATE.mediaRecorder.start();
-        VOICE_STATE.isRecording = true;
-        VOICE_STATE.isPaused = false;
-        VOICE_STATE.seconds = 0;
-        vTimer.style.display = "inline-block";
-        vTimer.textContent = "00:00";
-        btnRec.classList.add("recording");
-        btnRec.innerHTML = `<span class="voice-rec-dot"></span>${t("voice_stop")}`;
-        btnPause.style.display = "inline-flex";
-        btnPause.innerHTML = `⏸️ ${t("voice_pause")}`;
-        vStatus.textContent = t("voice_rec_active");
+        vLangBadge.textContent = `Detected: ${detLangName} (${detLang.toUpperCase()})`;
+        if (detLang === "hi") {
+          vLangBadge.style.background = "#fef3c7";
+          vLangBadge.style.color = "#92400e";
+        } else if (detLang === "ar") {
+          vLangBadge.style.background = "#dbeafe";
+          vLangBadge.style.color = "#1e40af";
+        } else {
+          vLangBadge.style.background = "#dcfce7";
+          vLangBadge.style.color = "#166534";
+        }
 
-        VOICE_STATE.timerInterval = setInterval(() => {
-          VOICE_STATE.seconds++;
-          const mins = String(Math.floor(VOICE_STATE.seconds / 60)).padStart(2, "0");
-          const secs = String(VOICE_STATE.seconds % 60).padStart(2, "0");
-          vTimer.textContent = `${mins}:${secs}`;
-        }, 1000);
+        // Automatically fill the target input with AI description
+        const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
+        if (formInput && aiDesc) {
+          formInput.value = aiDesc;
+          formInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+
+        // Save hidden fields
+        let hLang = container.querySelector('input[name="original_lang"]');
+        if (!hLang) {
+          hLang = document.createElement("input");
+          hLang.type = "hidden";
+          hLang.name = "original_lang";
+          container.append(hLang);
+        }
+        hLang.value = detLang;
+
+        let hTrans = container.querySelector('input[name="original_transcript"]');
+        if (!hTrans) {
+          hTrans = document.createElement("input");
+          hTrans.type = "hidden";
+          hTrans.name = "original_transcript";
+          container.append(hTrans);
+        }
+        hTrans.value = origText;
+
+        let hDesc = container.querySelector('input[name="ai_description"]');
+        if (!hDesc) {
+          hDesc = document.createElement("input");
+          hDesc.type = "hidden";
+          hDesc.name = "ai_description";
+          container.append(hDesc);
+        }
+        hDesc.value = aiDesc;
+
+        let hVoice = container.querySelector('input[name="voice_doc_id"]');
+        if (!hVoice) {
+          hVoice = document.createElement("input");
+          hVoice.type = "hidden";
+          hVoice.name = "voice_doc_id";
+          container.append(hVoice);
+        }
+        if (res.audio_id) hVoice.value = res.audio_id;
 
       } catch (err) {
-        vStatus.textContent = "Microphone access error: " + err.message;
+        vStatus.textContent = t("voice_failed") + " (" + err.message + ")";
       }
     }
-  };
-}
 
-// ---------------- 3. AI-POWERED MULTILINGUAL DOCUMENT AUTO-FILL MODULE ----------------
-function setupDocumentAutoFill(formContainer, fileInput, docContext = "purchase") {
-  if (!formContainer || !fileInput) return;
-  if (fileInput._hasAutoFill) return;
-  fileInput._hasAutoFill = true;
+    // Apply button handler
+    btnApply.onclick = () => {
+      const formInput = container.closest("form").querySelector(`[name="${targetName}"]`);
+      if (formInput) {
+        formInput.value = vTransInput.value;
+        formInput.focus();
+        formInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      let hDesc = container.querySelector('input[name="ai_description"]');
+      if (hDesc) hDesc.value = vTransInput.value;
+      vStatus.textContent = "✓ Applied description to form.";
+    };
 
-  const banner = document.createElement("div");
-  banner.className = "doc-ai-banner";
-  banner.style.display = "none";
-  banner.innerHTML = `
+    // Discard button handler
+    btnDiscard.onclick = () => {
+      vPreview.style.display = "none";
+      vAudio.src = "";
+      vOrigText.textContent = "";
+      vTransInput.value = "";
+      vStatus.textContent = t("voice_instruction");
+    };
+
+    // Re-record handler
+    btnReRec.onclick = () => {
+      vPreview.style.display = "none";
+      vAudio.src = "";
+      vOrigText.textContent = "";
+      vTransInput.value = "";
+      vStatus.textContent = t("voice_instruction");
+      vTimer.style.display = "none";
+      vTimer.textContent = "00:00";
+      VOICE_STATE.seconds = 0;
+    };
+
+    // Upload file handler
+    fileInput.onchange = async () => {
+      if (fileInput.files && fileInput.files[0]) {
+        const f = fileInput.files[0];
+        await processAudio(f, "");
+      }
+    };
+
+    // Pause / Resume handler
+    btnPause.onclick = () => {
+      if (!VOICE_STATE.isRecording || !VOICE_STATE.mediaRecorder) return;
+      if (!VOICE_STATE.isPaused) {
+        try {
+          VOICE_STATE.mediaRecorder.pause();
+          VOICE_STATE.isPaused = true;
+          clearInterval(VOICE_STATE.timerInterval);
+          btnPause.innerHTML = `▶️ ${t("voice_resume")}`;
+          vStatus.textContent = "Recording paused.";
+        } catch (e) { }
+      } else {
+        try {
+          VOICE_STATE.mediaRecorder.resume();
+          VOICE_STATE.isPaused = false;
+          btnPause.innerHTML = `⏸️ ${t("voice_pause")}`;
+          vStatus.textContent = t("voice_rec_active");
+          VOICE_STATE.timerInterval = setInterval(() => {
+            VOICE_STATE.seconds++;
+            const mins = String(Math.floor(VOICE_STATE.seconds / 60)).padStart(2, "0");
+            const secs = String(VOICE_STATE.seconds % 60).padStart(2, "0");
+            vTimer.textContent = `${mins}:${secs}`;
+          }, 1000);
+        } catch (e) { }
+      }
+    };
+
+    // Record button handler
+    btnRec.onclick = async () => {
+      if (VOICE_STATE.isRecording) {
+        // STOP RECORDING
+        VOICE_STATE.isRecording = false;
+        VOICE_STATE.isPaused = false;
+        btnRec.classList.remove("recording");
+        btnRec.innerHTML = `🎙️ ${t("voice_start")}`;
+        btnPause.style.display = "none";
+        clearInterval(VOICE_STATE.timerInterval);
+        vStatus.textContent = t("voice_processing");
+
+        if (VOICE_STATE.mediaRecorder && VOICE_STATE.mediaRecorder.state !== "inactive") {
+          VOICE_STATE.mediaRecorder.stop();
+        }
+        if (VOICE_STATE.recognition) {
+          try { VOICE_STATE.recognition.stop(); } catch (e) { }
+        }
+      } else {
+        // START RECORDING
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          VOICE_STATE.audioChunks = [];
+          VOICE_STATE.transcript = "";
+          VOICE_STATE.mediaRecorder = new MediaRecorder(stream);
+
+          VOICE_STATE.mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) VOICE_STATE.audioChunks.push(e.data);
+          };
+
+          VOICE_STATE.mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(track => track.stop());
+            const audioBlob = new Blob(VOICE_STATE.audioChunks, { type: "audio/webm" });
+            VOICE_STATE.audioBlob = audioBlob;
+            await processAudio(audioBlob, VOICE_STATE.transcript);
+          };
+
+          // Browser speech recognition
+          const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (SpeechRec) {
+            VOICE_STATE.recognition = new SpeechRec();
+            VOICE_STATE.recognition.continuous = true;
+            VOICE_STATE.recognition.interimResults = true;
+
+            let targetLangCode = "en-US";
+            if (activeLang === "hi") targetLangCode = "hi-IN";
+            else if (activeLang === "ar") targetLangCode = "ar-SA";
+            else if (activeLang === "en") targetLangCode = "en-US";
+            else if (CUR_LANG === "hi") targetLangCode = "hi-IN";
+            else if (CUR_LANG === "ar") targetLangCode = "ar-SA";
+
+            VOICE_STATE.recognition.lang = targetLangCode;
+            VOICE_STATE.recognition.onresult = event => {
+              let finalStr = "";
+              for (let i = 0; i < event.results.length; i++) {
+                finalStr += event.results[i][0].transcript + " ";
+              }
+              VOICE_STATE.transcript = finalStr.trim();
+              vStatus.textContent = "Listening (" + targetLangCode + "): " + VOICE_STATE.transcript;
+            };
+            try { VOICE_STATE.recognition.start(); } catch (e) { }
+          }
+
+          VOICE_STATE.mediaRecorder.start();
+          VOICE_STATE.isRecording = true;
+          VOICE_STATE.isPaused = false;
+          VOICE_STATE.seconds = 0;
+          vTimer.style.display = "inline-block";
+          vTimer.textContent = "00:00";
+          btnRec.classList.add("recording");
+          btnRec.innerHTML = `<span class="voice-rec-dot"></span>${t("voice_stop")}`;
+          btnPause.style.display = "inline-flex";
+          btnPause.innerHTML = `⏸️ ${t("voice_pause")}`;
+          vStatus.textContent = t("voice_rec_active");
+
+          VOICE_STATE.timerInterval = setInterval(() => {
+            VOICE_STATE.seconds++;
+            const mins = String(Math.floor(VOICE_STATE.seconds / 60)).padStart(2, "0");
+            const secs = String(VOICE_STATE.seconds % 60).padStart(2, "0");
+            vTimer.textContent = `${mins}:${secs}`;
+          }, 1000);
+
+        } catch (err) {
+          vStatus.textContent = "Microphone access error: " + err.message;
+        }
+      }
+    };
+  }
+
+  // ---------------- 3. AI-POWERED MULTILINGUAL DOCUMENT AUTO-FILL MODULE ----------------
+  function setupDocumentAutoFill(formContainer, fileInput, docContext = "purchase") {
+    if (!formContainer || !fileInput) return;
+    if (fileInput._hasAutoFill) return;
+    fileInput._hasAutoFill = true;
+
+    const banner = document.createElement("div");
+    banner.className = "doc-ai-banner";
+    banner.style.display = "none";
+    banner.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:700;font-size:.825rem;color:#1e3a8a">🤖 ${t("doc_ai_title")}</span>
       <span class="doc-ai-badge" id="aiDocBadge" style="display:none"></span>
@@ -823,133 +823,133 @@ function setupDocumentAutoFill(formContainer, fileInput, docContext = "purchase"
     <div id="aiDocReview" style="display:none;font-size:.78rem;margin-top:.25rem"></div>
   `;
 
-  const fieldWrapper = fileInput.closest("div") || fileInput.parentElement;
-  if (fieldWrapper) fieldWrapper.after(banner);
+    const fieldWrapper = fileInput.closest("div") || fileInput.parentElement;
+    if (fieldWrapper) fieldWrapper.after(banner);
 
-  const stepUpload = banner.querySelector("#aiStepUpload");
-  const stepLang = banner.querySelector("#aiStepLang");
-  const stepOcr = banner.querySelector("#aiStepOcr");
-  const stepFill = banner.querySelector("#aiStepFill");
-  const aiBadge = banner.querySelector("#aiDocBadge");
-  const aiStatus = banner.querySelector("#aiDocStatus");
+    const stepUpload = banner.querySelector("#aiStepUpload");
+    const stepLang = banner.querySelector("#aiStepLang");
+    const stepOcr = banner.querySelector("#aiStepOcr");
+    const stepFill = banner.querySelector("#aiStepFill");
+    const aiBadge = banner.querySelector("#aiDocBadge");
+    const aiStatus = banner.querySelector("#aiDocStatus");
 
-  fileInput.addEventListener("change", async () => {
-    if (!fileInput.files || !fileInput.files[0]) return;
-    const file = fileInput.files[0];
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext)) return;
+    fileInput.addEventListener("change", async () => {
+      if (!fileInput.files || !fileInput.files[0]) return;
+      const file = fileInput.files[0];
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext)) return;
 
-    banner.style.display = "grid";
-    banner.className = "doc-ai-banner scanning";
-    stepUpload.className = "doc-ai-step done";
-    stepUpload.textContent = `📄 ${file.name.slice(0, 20)}`;
-    stepLang.className = "doc-ai-step active";
-    stepOcr.className = "doc-ai-step";
-    stepFill.className = "doc-ai-step";
-    aiBadge.style.display = "none";
-    aiStatus.innerHTML = `<span class="voice-rec-dot" style="background:#2563eb"></span> ${t("doc_ai_detecting")}`;
+      banner.style.display = "grid";
+      banner.className = "doc-ai-banner scanning";
+      stepUpload.className = "doc-ai-step done";
+      stepUpload.textContent = `📄 ${file.name.slice(0, 20)}`;
+      stepLang.className = "doc-ai-step active";
+      stepOcr.className = "doc-ai-step";
+      stepFill.className = "doc-ai-step";
+      aiBadge.style.display = "none";
+      aiStatus.innerHTML = `<span class="voice-rec-dot" style="background:#2563eb"></span> ${t("doc_ai_detecting")}`;
 
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("context", docContext);
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("context", docContext);
 
-    try {
-      stepOcr.className = "doc-ai-step active";
-      const res = await post("/documents/scan-autofill", fd);
+      try {
+        stepOcr.className = "doc-ai-step active";
+        const res = await post("/documents/scan-autofill", fd);
 
-      // Language step
-      stepLang.className = "doc-ai-step done";
-      aiBadge.style.display = "inline-flex";
-      aiBadge.className = `doc-ai-badge ${res.detected_lang || 'en'}`;
-      const langLabels = { en: "English", hi: "हिन्दी (Hindi)", ar: "العربية (Arabic)" };
-      aiBadge.textContent = `Detected: ${langLabels[res.detected_lang] || res.detected_lang_name} (${res.overall_confidence}% conf)`;
+        // Language step
+        stepLang.className = "doc-ai-step done";
+        aiBadge.style.display = "inline-flex";
+        aiBadge.className = `doc-ai-badge ${res.detected_lang || 'en'}`;
+        const langLabels = { en: "English", hi: "हिन्दी (Hindi)", ar: "العربية (Arabic)" };
+        aiBadge.textContent = `Detected: ${langLabels[res.detected_lang] || res.detected_lang_name} (${res.overall_confidence}% conf)`;
 
-      // OCR & Fill steps
-      stepOcr.className = "doc-ai-step done";
-      stepFill.className = "doc-ai-step done";
-      banner.className = "doc-ai-banner ready";
+        // OCR & Fill steps
+        stepOcr.className = "doc-ai-step done";
+        stepFill.className = "doc-ai-step done";
+        banner.className = "doc-ai-banner ready";
 
-      const f = res.fields || {};
-      let filledCount = 0;
+        const f = res.fields || {};
+        let filledCount = 0;
 
-      function populate(inputNames, fieldKey) {
-        if (!f[fieldKey] || f[fieldKey].value === undefined || f[fieldKey].value === null || f[fieldKey].value === "") return;
-        const fieldData = f[fieldKey];
-        const val = fieldData.value;
-        for (const name of inputNames) {
-          const inp = formContainer.querySelector(`[name="${name}"]`);
-          if (inp) {
-            inp.value = val;
-            inp.classList.add("ai-populated");
-            inp.dispatchEvent(new Event("input", { bubbles: true }));
-            inp.dispatchEvent(new Event("change", { bubbles: true }));
-            filledCount++;
-
-            const parentLabel = inp.closest("label");
-            if (parentLabel && !parentLabel.querySelector(".ai-field-tag")) {
-              const tag = document.createElement("span");
-              tag.className = "ai-field-tag";
-              tag.textContent = `✓ AI ${Math.round((fieldData.confidence || 0.9) * 100)}%`;
-              parentLabel.append(tag);
-            }
-
-            if (fieldData.original_value && fieldData.original_value !== val) {
-              const parentDiv = inp.closest("div");
-              if (parentDiv && !parentDiv.querySelector(".ai-orig-label")) {
-                const origSub = document.createElement("small");
-                origSub.className = "ai-orig-label";
-                origSub.textContent = `Original: "${fieldData.original_value}" → Translated to English`;
-                parentDiv.append(origSub);
-              }
-            }
-            break;
-          }
-        }
-      }
-
-      populate(["invoice_no", "ref_no", "bill_no", "doc_no"], "invoice_no");
-      populate(["supplier", "supplier_name", "vendor"], "supplier");
-      populate(["date", "purchased_at", "record_date", "issue_date"], "date");
-      populate(["part_name", "name", "description", "title"], "part_name");
-      populate(["qty", "quantity"], "qty");
-      populate(["unit_price", "est_price", "price", "unit_cost"], "unit_price");
-      populate(["amount", "cost", "total", "total_spent"], "total_amount");
-      populate(["tax", "vat"], "tax");
-      populate(["reg_no", "plate_no"], "reg_no");
-      populate(["vin", "serial_no", "vin_or_serial"], "vin");
-      populate(["insurance_company"], "insurance_company");
-      populate(["insurance_policy"], "insurance_policy");
-
-      if (f.currency && f.currency.value) {
-        const curSelect = formContainer.querySelector('select[name="currency"]');
-        if (curSelect) {
-          for (let opt of curSelect.options) {
-            if (opt.value === f.currency.value) {
-              curSelect.value = f.currency.value;
-              curSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        function populate(inputNames, fieldKey) {
+          if (!f[fieldKey] || f[fieldKey].value === undefined || f[fieldKey].value === null || f[fieldKey].value === "") return;
+          const fieldData = f[fieldKey];
+          const val = fieldData.value;
+          for (const name of inputNames) {
+            const inp = formContainer.querySelector(`[name="${name}"]`);
+            if (inp) {
+              inp.value = val;
+              inp.classList.add("ai-populated");
+              inp.dispatchEvent(new Event("input", { bubbles: true }));
+              inp.dispatchEvent(new Event("change", { bubbles: true }));
               filledCount++;
+
+              const parentLabel = inp.closest("label");
+              if (parentLabel && !parentLabel.querySelector(".ai-field-tag")) {
+                const tag = document.createElement("span");
+                tag.className = "ai-field-tag";
+                tag.textContent = `✓ AI ${Math.round((fieldData.confidence || 0.9) * 100)}%`;
+                parentLabel.append(tag);
+              }
+
+              if (fieldData.original_value && fieldData.original_value !== val) {
+                const parentDiv = inp.closest("div");
+                if (parentDiv && !parentDiv.querySelector(".ai-orig-label")) {
+                  const origSub = document.createElement("small");
+                  origSub.className = "ai-orig-label";
+                  origSub.textContent = `Original: "${fieldData.original_value}" → Translated to English`;
+                  parentDiv.append(origSub);
+                }
+              }
               break;
             }
           }
         }
+
+        populate(["invoice_no", "ref_no", "bill_no", "doc_no"], "invoice_no");
+        populate(["supplier", "supplier_name", "vendor"], "supplier");
+        populate(["date", "purchased_at", "record_date", "issue_date"], "date");
+        populate(["part_name", "name", "description", "title"], "part_name");
+        populate(["qty", "quantity"], "qty");
+        populate(["unit_price", "est_price", "price", "unit_cost"], "unit_price");
+        populate(["amount", "cost", "total", "total_spent"], "total_amount");
+        populate(["tax", "vat"], "tax");
+        populate(["reg_no", "plate_no"], "reg_no");
+        populate(["vin", "serial_no", "vin_or_serial"], "vin");
+        populate(["insurance_company"], "insurance_company");
+        populate(["insurance_policy"], "insurance_policy");
+
+        if (f.currency && f.currency.value) {
+          const curSelect = formContainer.querySelector('select[name="currency"]');
+          if (curSelect) {
+            for (let opt of curSelect.options) {
+              if (opt.value === f.currency.value) {
+                curSelect.value = f.currency.value;
+                curSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                filledCount++;
+                break;
+              }
+            }
+          }
+        }
+
+        let statusHtml = `<b>✓ ${t("doc_ai_ready")}</b> (${filledCount} fields populated).`;
+        if (res.calculations_verified) {
+          statusHtml += ` <span style="color:#15803d;font-weight:600;margin-left:.35rem">${t("doc_ai_verified")}</span>`;
+        }
+        aiStatus.innerHTML = statusHtml;
+
+      } catch (err) {
+        stepOcr.className = "doc-ai-step active";
+        aiStatus.textContent = "AI scan skipped: " + err.message;
+        banner.className = "doc-ai-banner";
       }
+    });
+  }
 
-      let statusHtml = `<b>✓ ${t("doc_ai_ready")}</b> (${filledCount} fields populated).`;
-      if (res.calculations_verified) {
-        statusHtml += ` <span style="color:#15803d;font-weight:600;margin-left:.35rem">${t("doc_ai_verified")}</span>`;
-      }
-      aiStatus.innerHTML = statusHtml;
-
-    } catch (err) {
-      stepOcr.className = "doc-ai-step active";
-      aiStatus.textContent = "AI scan skipped: " + err.message;
-      banner.className = "doc-ai-banner";
-    }
-  });
-}
-
-function renderFormField(f) {
-  return `
+  function renderFormField(f) {
+    return `
     <div id="field_${f.n}">
       <label>
         ${esc(f.l)}
@@ -965,39 +965,39 @@ function renderFormField(f) {
       </label>
     </div>
   `;
-}
+  }
 
-function ask(title, fs, voiceField = null) {
-  return new Promise(res => {
-    const d = document.createElement("dialog");
-    d.className = "dlg";
+  function ask(title, fs, voiceField = null) {
+    return new Promise(res => {
+      const d = document.createElement("dialog");
+      d.className = "dlg";
 
-    let fieldsHtml = "";
-    if (fs.length > 6) {
-      const groups = [
-        { title: "General Identification", icon: "📋", fields: [] },
-        { title: "Machinery Specifications", icon: "⚙️", fields: [] },
-        { title: "Assignment & Location", icon: "📍", fields: [] },
-        { title: "Kuwait Compliance & Insurance", icon: "🛡️", fields: [] },
-        { title: "Technical Details & Remarks", icon: "📝", fields: [] }
-      ];
+      let fieldsHtml = "";
+      if (fs.length > 6) {
+        const groups = [
+          { title: "General Identification", icon: "📋", fields: [] },
+          { title: "Machinery Specifications", icon: "⚙️", fields: [] },
+          { title: "Assignment & Location", icon: "📍", fields: [] },
+          { title: "Kuwait Compliance & Insurance", icon: "🛡️", fields: [] },
+          { title: "Technical Details & Remarks", icon: "📝", fields: [] }
+        ];
 
-      fs.forEach(f => {
-        const n = f.n;
-        if (["name", "category", "plate_category", "reg_no", "equipment_type"].includes(n)) {
-          groups[0].fields.push(f);
-        } else if (["manufacturer", "brand", "model", "year", "vin", "engine_no", "serial_no", "ownership_type"].includes(n)) {
-          groups[1].fields.push(f);
-        } else if (["country", "governorate", "paci_no", "operator", "civil_id_operator", "department", "worksite_id", "status"].includes(n)) {
-          groups[2].fields.push(f);
-        } else if (["purchase_date", "purchase_cost", "insurance_company", "insurance_policy", "insurance_expiry", "inspection_expiry", "reg_expiry"].includes(n)) {
-          groups[3].fields.push(f);
-        } else {
-          groups[4].fields.push(f);
-        }
-      });
+        fs.forEach(f => {
+          const n = f.n;
+          if (["name", "category", "plate_category", "reg_no", "equipment_type"].includes(n)) {
+            groups[0].fields.push(f);
+          } else if (["manufacturer", "brand", "model", "year", "vin", "engine_no", "serial_no", "ownership_type"].includes(n)) {
+            groups[1].fields.push(f);
+          } else if (["country", "governorate", "paci_no", "operator", "civil_id_operator", "department", "worksite_id", "status"].includes(n)) {
+            groups[2].fields.push(f);
+          } else if (["purchase_date", "purchase_cost", "insurance_company", "insurance_policy", "insurance_expiry", "inspection_expiry", "reg_expiry"].includes(n)) {
+            groups[3].fields.push(f);
+          } else {
+            groups[4].fields.push(f);
+          }
+        });
 
-      fieldsHtml = groups.filter(g => g.fields.length > 0).map(g => `
+        fieldsHtml = groups.filter(g => g.fields.length > 0).map(g => `
         <div class="form-section-title">
           <span>${g.icon}</span> ${esc(g.title)}
         </div>
@@ -1005,11 +1005,11 @@ function ask(title, fs, voiceField = null) {
           ${g.fields.map(f => renderFormField(f)).join("")}
         </div>
       `).join("");
-    } else {
-      fieldsHtml = `<div style="display:grid;gap:.75rem">${fs.map(f => renderFormField(f)).join("")}</div>`;
-    }
+      } else {
+        fieldsHtml = `<div style="display:grid;gap:.75rem">${fs.map(f => renderFormField(f)).join("")}</div>`;
+      }
 
-    d.innerHTML = `
+      d.innerHTML = `
       <form method="dialog" style="display:flex;flex-direction:column;height:100%">
         <div class="dlg-header">
           <h3 class="d" style="margin:0">${esc(title)}</h3>
@@ -1026,43 +1026,43 @@ function ask(title, fs, voiceField = null) {
         </div>
       </form>
     `;
-    document.body.append(d);
+      document.body.append(d);
 
-    // Attach voice recorder if requested
-    if (voiceField) {
-      const fieldContainer = d.querySelector(`#field_${voiceField}`) || d.querySelector("#voiceAnchor");
-      setupVoiceRecorder(voiceField, fieldContainer);
-    }
+      // Attach voice recorder if requested
+      if (voiceField) {
+        const fieldContainer = d.querySelector(`#field_${voiceField}`) || d.querySelector("#voiceAnchor");
+        setupVoiceRecorder(voiceField, fieldContainer);
+      }
 
-    // Auto-detect file inputs and attach Document AI Auto-Fill
-    const form = d.querySelector("form");
-    const fileInputs = d.querySelectorAll('input[type="file"]');
-    fileInputs.forEach(fileInput => {
-      let ctx = "purchase";
-      const lowerTitle = title.toLowerCase();
-      if (lowerTitle.includes("expense") || lowerTitle.includes("maintenance expense")) ctx = "expense";
-      else if (lowerTitle.includes("equipment") || lowerTitle.includes("vehicle") || lowerTitle.includes("relocate") || lowerTitle.includes("specification")) ctx = "vehicle";
-      else if (lowerTitle.includes("historical") || lowerTitle.includes("paper record")) ctx = "historical";
-      else if (lowerTitle.includes("stock") || lowerTitle.includes("part") || lowerTitle.includes("catalogue")) ctx = "part";
+      // Auto-detect file inputs and attach Document AI Auto-Fill
+      const form = d.querySelector("form");
+      const fileInputs = d.querySelectorAll('input[type="file"]');
+      fileInputs.forEach(fileInput => {
+        let ctx = "purchase";
+        const lowerTitle = title.toLowerCase();
+        if (lowerTitle.includes("expense") || lowerTitle.includes("maintenance expense")) ctx = "expense";
+        else if (lowerTitle.includes("equipment") || lowerTitle.includes("vehicle") || lowerTitle.includes("relocate") || lowerTitle.includes("specification")) ctx = "vehicle";
+        else if (lowerTitle.includes("historical") || lowerTitle.includes("paper record")) ctx = "historical";
+        else if (lowerTitle.includes("stock") || lowerTitle.includes("part") || lowerTitle.includes("catalogue")) ctx = "part";
 
-      setupDocumentAutoFill(form, fileInput, ctx);
+        setupDocumentAutoFill(form, fileInput, ctx);
+      });
+
+      d.showModal();
+      d.querySelectorAll("[data-c]").forEach(b => b.onclick = () => d.close());
+      d.onclose = () => { d.remove(); res(null); };
+      d.querySelector("form").onsubmit = e => {
+        e.preventDefault();
+        res(new FormData(e.target));
+        d.close();
+      };
     });
+  }
 
-    d.showModal();
-    d.querySelectorAll("[data-c]").forEach(b => b.onclick = () => d.close());
-    d.onclose = () => { d.remove(); res(null); };
-    d.querySelector("form").onsubmit = e => {
-      e.preventDefault();
-      res(new FormData(e.target));
-      d.close();
-    };
-  });
-}
-
-function show(title, html) {
-  const d = document.createElement("dialog");
-  d.className = "dlg";
-  d.innerHTML = `
+  function show(title, html) {
+    const d = document.createElement("dialog");
+    d.className = "dlg";
+    d.innerHTML = `
     <div style="display:flex;flex-direction:column;height:100%">
       <div class="dlg-header">
         <h3 class="d" style="margin:0">${esc(title)}</h3>
@@ -1076,24 +1076,24 @@ function show(title, html) {
       </div>
     </div>
   `;
-  document.body.append(d);
-  d.showModal();
-  d.querySelectorAll("[data-c]").forEach(b => b.onclick = () => d.close());
-  d.onclose = () => d.remove();
-}
-
-let CURRENT_TABLE_VIEW_MODE = localStorage.getItem("fleethub_table_view_mode") || "cards";
-
-const tbl = (cols, data, act) => {
-  if (!data || !data.length) {
-    return `<p class="mu" style="padding:1.5rem 0">No records found.</p>`;
+    document.body.append(d);
+    d.showModal();
+    d.querySelectorAll("[data-c]").forEach(b => b.onclick = () => d.close());
+    d.onclose = () => d.remove();
   }
 
-  const tid = "tbl_" + Math.random().toString(36).slice(2, 9);
-  const totalCount = data.length;
+  let CURRENT_TABLE_VIEW_MODE = localStorage.getItem("fleethub_table_view_mode") || "cards";
 
-  // 1. Build Desktop Table View
-  const desktopTableHtml = `
+  const tbl = (cols, data, act) => {
+    if (!data || !data.length) {
+      return `<p class="mu" style="padding:1.5rem 0">No records found.</p>`;
+    }
+
+    const tid = "tbl_" + Math.random().toString(36).slice(2, 9);
+    const totalCount = data.length;
+
+    // 1. Build Desktop Table View
+    const desktopTableHtml = `
     <div class="table-desktop-view tw card">
       <table>
         <thead>
@@ -1114,37 +1114,37 @@ const tbl = (cols, data, act) => {
     </div>
   `;
 
-  // 2. Build Mobile Cards View
-  const mobileCardsHtml = `
+    // 2. Build Mobile Cards View
+    const mobileCardsHtml = `
     <div class="table-mobile-cards">
       ${data.map((r, rowIdx) => {
-        const rowVals = cols.map(c => ({
-          key: c[0],
-          label: c[1],
-          val: c[2] ? c[2](r) : esc(r[c[0]] ?? "")
-        }));
+      const rowVals = cols.map(c => ({
+        key: c[0],
+        label: c[1],
+        val: c[2] ? c[2](r) : esc(r[c[0]] ?? "")
+      }));
 
-        const codeItem = rowVals[0] || { val: "-" };
-        const titleItem = rowVals[1] || { val: "-" };
+      const codeItem = rowVals[0] || { val: "-" };
+      const titleItem = rowVals[1] || { val: "-" };
 
-        let statusIdx = cols.findIndex(c => c[0] === "status" || c[1].toLowerCase().includes("status"));
-        let statusItem = statusIdx >= 0 ? rowVals[statusIdx] : null;
+      let statusIdx = cols.findIndex(c => c[0] === "status" || c[1].toLowerCase().includes("status"));
+      let statusItem = statusIdx >= 0 ? rowVals[statusIdx] : null;
 
-        const primaryKVs = [];
-        const secondaryKVs = [];
+      const primaryKVs = [];
+      const secondaryKVs = [];
 
-        rowVals.forEach((item, idx) => {
-          if (idx === 0 || idx === 1 || idx === statusIdx) return;
-          if (primaryKVs.length < 4) {
-            primaryKVs.push(item);
-          } else {
-            secondaryKVs.push(item);
-          }
-        });
+      rowVals.forEach((item, idx) => {
+        if (idx === 0 || idx === 1 || idx === statusIdx) return;
+        if (primaryKVs.length < 4) {
+          primaryKVs.push(item);
+        } else {
+          secondaryKVs.push(item);
+        }
+      });
 
-        const cardDetailsId = `${tid}_det_${rowIdx}`;
+      const cardDetailsId = `${tid}_det_${rowIdx}`;
 
-        return `
+      return `
           <div class="data-card">
             <div class="card-top-row">
               <span class="card-code-badge">${codeItem.val}</span>
@@ -1185,11 +1185,11 @@ const tbl = (cols, data, act) => {
             ` : ""}
           </div>
         `;
-      }).join("")}
+    }).join("")}
     </div>
   `;
 
-  return `
+    return `
     <div class="responsive-data-system" id="${tid}">
       <div class="view-toggle-bar">
         <span class="m" style="color:var(--mu);font-size:.8rem">${totalCount} item(s)</span>
@@ -1209,165 +1209,173 @@ const tbl = (cols, data, act) => {
       </div>
     </div>
   `;
-};
+  };
 
-const fileUrl = (id, extra = "") => {
-  if (!id) return "";
-  const token = localStorage.getItem("fleethub_token");
-  const base = (window.FLEETHUB_API_BASE || "") + "/api/files/" + id;
-  const params = [];
-  if (token) params.push("token=" + encodeURIComponent(token));
-  if (extra) params.push(extra.startsWith("&") || extra.startsWith("?") ? extra.substring(1) : extra);
-  return base + (params.length ? "?" + params.join("&") : "");
-};
+  const fileUrl = (id, extra = "") => {
+    if (!id) return "";
+    const token = localStorage.getItem("fleethub_token");
+    const base = (window.FLEETHUB_API_BASE || "") + "/api/files/" + id;
+    const params = [];
+    if (token) params.push("token=" + encodeURIComponent(token));
+    if (extra) params.push(extra.startsWith("&") || extra.startsWith("?") ? extra.substring(1) : extra);
+    return base + (params.length ? "?" + params.join("&") : "");
+  };
 
-const B = (a, id, l, x = "") => `<button class="btn g sm" data-a="${a}" data-id="${id}" ${x}>${l}</button>`;
-const bill = id => id ? `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="chip c-verified">View Bill</a>` : `<span class="mu">-</span>`;
-const docLink = id => id ? `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="chip c-verified">View Doc</a>` : `<span class="mu">-</span>`;
-const audioPlayer = id => id ? `<div style="display:inline-flex;align-items:center;gap:.3rem"><audio src="${fileUrl(id)}" controls style="height:1.75rem;max-width:11rem;vertical-align:middle"></audio><a href="${fileUrl(id, "dl=1")}" title="Download audio recording" download class="chip" style="font-size:.7rem;padding:.15rem .35rem;text-decoration:none">💾</a></div>` : `<span class="mu">-</span>`;
-const opts = (a, v, l, none) => (none ? [["", none]] : []).concat(a.map(r => [r[v], l(r)]));
-const aOpts = async (mine) => opts(await api(mine ? "/my-assets" : "/assets"), "id", a => `${a.code} · ${a.name}${a.reg_no ? " · " + a.reg_no : ""}`);
-const woOpts = async none => opts(await api("/work-orders?open=1"), "id", w => `${w.code} · ${w.asset_code} · ${w.description.slice(0, 40)}`, none);
-const supOpts = async none => opts(await api("/suppliers"), "id", s => `${s.code} · ${s.name}`, none);
+  const B = (a, id, l, x = "") => `<button class="btn g sm" data-a="${a}" data-id="${id}" ${x}>${l}</button>`;
+  const bill = id => id ? `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="chip c-verified">View Bill</a>` : `<span class="mu">-</span>`;
+  const docLink = id => id ? `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="chip c-verified">View Doc</a>` : `<span class="mu">-</span>`;
+  const audioPlayer = id => id ? `<div style="display:inline-flex;align-items:center;gap:.3rem"><audio src="${fileUrl(id)}" controls style="height:1.75rem;max-width:11rem;vertical-align:middle"></audio><a href="${fileUrl(id, "dl=1")}" title="Download audio recording" download class="chip" style="font-size:.7rem;padding:.15rem .35rem;text-decoration:none">💾</a></div>` : `<span class="mu">-</span>`;
+  const opts = (a, v, l, none) => (none ? [["", none]] : []).concat(a.map(r => [r[v], l(r)]));
+  const aOpts = async (mine) => opts(await api(mine ? "/my-assets" : "/assets"), "id", a => `${a.code} · ${a.name}${a.reg_no ? " · " + a.reg_no : ""}`);
+  const woOpts = async none => opts(await api("/work-orders?open=1"), "id", w => `${w.code} · ${w.asset_code} · ${(w.description || w.desc || "").slice(0, 40)}`, none);
+  const supOpts = async none => opts(await api("/suppliers"), "id", s => `${s.code} · ${s.name}`, none);
 
-const AFS = (a = {}, ws = [], cats = []) => [
-  { n: "name", l: "Equipment / Vehicle Name", v: a.name, r: 1 },
-  { n: "category", l: "Category (e.g. Heavy Truck, Mobile Crane, Excavator, Generator)", v: a.category || "Heavy Truck", r: 1 },
-  { n: "plate_category", l: "Kuwait Plate Category", t: "select", o: [
-    ["Commercial / تجاري", "Commercial / تجاري"],
-    ["Construction & Heavy Equipment / إنشائية ومعدات ثقيلة", "Construction & Heavy Equipment / إنشائية ومعدات ثقيلة"],
-    ["Private / خصوصي", "Private / خصوصي"],
-    ["Public Transport / نقل عام", "Public Transport / نقل عام"],
-    ["Government / حكومي", "Government / حكومي"],
-    ["Temporary / مؤقت", "Temporary / مؤقت"],
-    ["Machinery (Internal ID Only)", "Machinery (Internal ID Only)"]
-  ], v: a.plate_category || "Commercial / تجاري" },
-  { n: "reg_no", l: "Kuwait Plate No. / Traffic Reg", v: a.reg_no },
-  { n: "equipment_type", l: "Equipment Type", v: a.equipment_type },
-  { n: "manufacturer", l: "Manufacturer (e.g. Hyundai, Komatsu, CAT, Mercedes-Benz)", v: a.manufacturer },
-  { n: "brand", l: "Brand", v: a.brand },
-  { n: "model", l: "Model", v: a.model },
-  { n: "year", l: "Manufacturing Year", t: "number", v: a.year },
-  { n: "vin", l: "VIN / Chassis Number", v: a.vin },
-  { n: "engine_no", l: "Engine Number", v: a.engine_no },
-  { n: "serial_no", l: "Permanent Serial Number", v: a.serial_no },
-  { n: "ownership_type", l: "Ownership / Lease Type", t: "select", o: [
-    ["Company Owned / ملك الشركة", "Company Owned / ملك الشركة"],
-    ["Finance Lease / تأجير تمويلي", "Finance Lease / تأجير تمويلي"],
-    ["Operating Lease / إيجار تشغيلي", "Operating Lease / إيجار تشغيلي"],
-    ["Rented / مستأجر", "Rented / مستأجر"]
-  ], v: a.ownership_type || "Company Owned / ملك الشركة" },
-  { n: "country", l: "Country / Business Region", v: a.country || "Kuwait" },
-  { n: "governorate", l: "Kuwait Governorate", t: "select", o: [
-    ["Ahmadi", "Ahmadi / الأحمدي"],
-    ["Capital", "Capital / العاصمة"],
-    ["Farwaniya", "Farwaniya / الفروانية"],
-    ["Jahra", "Jahra / الجهراء"],
-    ["Hawalli", "Hawalli / حولي"],
-    ["Mubarak Al-Kabeer", "Mubarak Al-Kabeer / مبارك الكبير"]
-  ], v: a.governorate || "Ahmadi" },
-  { n: "paci_no", l: "Kuwait PACI Building/Plot No (الرقم الآلي للعنوان)", v: a.paci_no },
-  { n: "operator", l: "Assigned Driver / Operator Name", v: a.operator },
-  { n: "civil_id_operator", l: "Operator Kuwait Civil ID (12 Digits)", v: a.civil_id_operator },
-  { n: "department", l: "Department", v: a.department },
-  { n: "worksite_id", l: "Current Worksite / Depot", t: "select", o: opts(ws, "id", w => `${w.name} (${w.governorate || 'Kuwait'})`, "(None assigned)"), v: a.worksite_id },
-  { n: "status", l: "Operational Status", t: "select", o: ["Active", "Under Repair", "Out of Service"].map(s => [s, s]), v: a.status || "Active" },
-  { n: "purchase_date", l: "Purchase Date", t: "date", v: a.purchase_date },
-  { n: "purchase_cost", l: "Purchase Cost (KWD)", t: "number", v: a.purchase_cost },
-  { n: "insurance_company", l: "Insurance Company", t: "select", o: [
-    ["Gulf Insurance Group (GIG)", "Gulf Insurance Group (GIG)"],
-    ["Kuwait Insurance Company (KIC)", "Kuwait Insurance Company (KIC)"],
-    ["Warba Insurance", "Warba Insurance"],
-    ["Al-Ahleia Insurance", "Al-Ahleia Insurance"],
-    ["Boubyan Takaful", "Boubyan Takaful"],
-    ["Enaya Insurance", "Enaya Insurance"],
-    ["Other Approved Insurer", "Other Approved Insurer"]
-  ], v: a.insurance_company || "Gulf Insurance Group (GIG)" },
-  { n: "insurance_policy", l: "Insurance Policy No.", v: a.insurance_policy },
-  { n: "insurance_expiry", l: "Insurance Expiry Date", t: "date", v: a.insurance_expiry },
-  { n: "inspection_expiry", l: "Technical Inspection (Fahs Fanni) Expiry", t: "date", v: a.inspection_expiry },
-  { n: "reg_expiry", l: "Traffic Registration (Daftar) Expiry Date", t: "date", v: a.reg_expiry },
-  { n: "warranty_details", l: "Warranty Details", v: a.warranty_details },
-  { n: "remarks", l: "Technical Specs / Remarks", t: "textarea", v: a.remarks }
-];
-
-async function updateAlertBadge() {
-  if (!ME || !can("asset.view")) return;
-  try {
-    LIVE_ALERTS = await api("/alerts");
-    
-    // 1. Desktop alert button
-    const b = $("#notifBadge");
-    if (b) {
-      if (LIVE_ALERTS.total > 0) {
-        b.innerHTML = `<span class="dot"></span>🔔 ${t("alerts")} <span class="badge-count">${LIVE_ALERTS.total}</span>`;
-      } else {
-        b.innerHTML = `🔔 ${t("alerts")}`;
-      }
-    }
-
-    // 2. Mobile header alert button
-    const mbAlerts = $("#btnMobileAlerts");
-    if (mbAlerts) {
-      const existingBadge = mbAlerts.querySelector(".badge-count");
-      if (LIVE_ALERTS.total > 0) {
-        if (existingBadge) {
-          existingBadge.textContent = LIVE_ALERTS.total;
-        } else {
-          mbAlerts.insertAdjacentHTML("beforeend", `<span class="badge-count" style="position:absolute;top:2px;right:2px">${LIVE_ALERTS.total}</span>`);
-        }
-      } else if (existingBadge) {
-        existingBadge.remove();
-      }
-    }
-
-    // 3. Mobile bottom nav tab for complaints
-    const compTab = document.querySelector('.bottom-nav-btn[data-id="comp"]');
-    if (compTab) {
-      const pendingCount = LIVE_ALERTS.pending_complaints || 0;
-      let badge = compTab.querySelector(".bottom-nav-badge");
-      if (pendingCount > 0) {
-        if (!badge) {
-          compTab.querySelector(".bottom-nav-icon")?.insertAdjacentHTML("beforeend", `<span class="bottom-nav-badge">${pendingCount}</span>`);
-        } else {
-          badge.textContent = pendingCount;
-        }
-      } else if (badge) {
-        badge.remove();
-      }
-    }
-  } catch (e) {}
-}
-
-const V = {}, ACT = {};
-
-// ---------------- VIEWS ----------------
-V.dash = async () => {
-  const d = await api("/dashboard");
-  const alerts = await api("/alerts").catch(() => ({ total: 0 }));
-
-  // Primary operational KPIs
-  const primaryK = [
-    [t("kpi_reg_fleet"), d.assets],
-    [t("kpi_active"), d.active],
-    [t("kpi_repair"), d.under_repair],
-    [t("kpi_open_wo"), d.wo_open]
+  const AFS = (a = {}, ws = [], cats = []) => [
+    { n: "name", l: "Equipment / Vehicle Name", v: a.name, r: 1 },
+    { n: "category", l: "Category (e.g. Heavy Truck, Mobile Crane, Excavator, Generator)", v: a.category || "Heavy Truck", r: 1 },
+    {
+      n: "plate_category", l: "Kuwait Plate Category", t: "select", o: [
+        ["Commercial / تجاري", "Commercial / تجاري"],
+        ["Construction & Heavy Equipment / إنشائية ومعدات ثقيلة", "Construction & Heavy Equipment / إنشائية ومعدات ثقيلة"],
+        ["Private / خصوصي", "Private / خصوصي"],
+        ["Public Transport / نقل عام", "Public Transport / نقل عام"],
+        ["Government / حكومي", "Government / حكومي"],
+        ["Temporary / مؤقت", "Temporary / مؤقت"],
+        ["Machinery (Internal ID Only)", "Machinery (Internal ID Only)"]
+      ], v: a.plate_category || "Commercial / تجاري"
+    },
+    { n: "reg_no", l: "Kuwait Plate No. / Traffic Reg", v: a.reg_no },
+    { n: "equipment_type", l: "Equipment Type", v: a.equipment_type },
+    { n: "manufacturer", l: "Manufacturer (e.g. Hyundai, Komatsu, CAT, Mercedes-Benz)", v: a.manufacturer },
+    { n: "brand", l: "Brand", v: a.brand },
+    { n: "model", l: "Model", v: a.model },
+    { n: "year", l: "Manufacturing Year", t: "number", v: a.year },
+    { n: "vin", l: "VIN / Chassis Number", v: a.vin },
+    { n: "engine_no", l: "Engine Number", v: a.engine_no },
+    { n: "serial_no", l: "Permanent Serial Number", v: a.serial_no },
+    {
+      n: "ownership_type", l: "Ownership / Lease Type", t: "select", o: [
+        ["Company Owned / ملك الشركة", "Company Owned / ملك الشركة"],
+        ["Finance Lease / تأجير تمويلي", "Finance Lease / تأجير تمويلي"],
+        ["Operating Lease / إيجار تشغيلي", "Operating Lease / إيجار تشغيلي"],
+        ["Rented / مستأجر", "Rented / مستأجر"]
+      ], v: a.ownership_type || "Company Owned / ملك الشركة"
+    },
+    { n: "country", l: "Country / Business Region", v: a.country || "Kuwait" },
+    {
+      n: "governorate", l: "Kuwait Governorate", t: "select", o: [
+        ["Ahmadi", "Ahmadi / الأحمدي"],
+        ["Capital", "Capital / العاصمة"],
+        ["Farwaniya", "Farwaniya / الفروانية"],
+        ["Jahra", "Jahra / الجهراء"],
+        ["Hawalli", "Hawalli / حولي"],
+        ["Mubarak Al-Kabeer", "Mubarak Al-Kabeer / مبارك الكبير"]
+      ], v: a.governorate || "Ahmadi"
+    },
+    { n: "paci_no", l: "Kuwait PACI Building/Plot No (الرقم الآلي للعنوان)", v: a.paci_no },
+    { n: "operator", l: "Assigned Driver / Operator Name", v: a.operator },
+    { n: "civil_id_operator", l: "Operator Kuwait Civil ID (12 Digits)", v: a.civil_id_operator },
+    { n: "department", l: "Department", v: a.department },
+    { n: "worksite_id", l: "Current Worksite / Depot", t: "select", o: opts(ws, "id", w => `${w.name} (${w.governorate || 'Kuwait'})`, "(None assigned)"), v: a.worksite_id },
+    { n: "status", l: "Operational Status", t: "select", o: ["Active", "Under Repair", "Out of Service"].map(s => [s, s]), v: a.status || "Active" },
+    { n: "purchase_date", l: "Purchase Date", t: "date", v: a.purchase_date },
+    { n: "purchase_cost", l: "Purchase Cost (KWD)", t: "number", v: a.purchase_cost },
+    {
+      n: "insurance_company", l: "Insurance Company", t: "select", o: [
+        ["Gulf Insurance Group (GIG)", "Gulf Insurance Group (GIG)"],
+        ["Kuwait Insurance Company (KIC)", "Kuwait Insurance Company (KIC)"],
+        ["Warba Insurance", "Warba Insurance"],
+        ["Al-Ahleia Insurance", "Al-Ahleia Insurance"],
+        ["Boubyan Takaful", "Boubyan Takaful"],
+        ["Enaya Insurance", "Enaya Insurance"],
+        ["Other Approved Insurer", "Other Approved Insurer"]
+      ], v: a.insurance_company || "Gulf Insurance Group (GIG)"
+    },
+    { n: "insurance_policy", l: "Insurance Policy No.", v: a.insurance_policy },
+    { n: "insurance_expiry", l: "Insurance Expiry Date", t: "date", v: a.insurance_expiry },
+    { n: "inspection_expiry", l: "Technical Inspection (Fahs Fanni) Expiry", t: "date", v: a.inspection_expiry },
+    { n: "reg_expiry", l: "Traffic Registration (Daftar) Expiry Date", t: "date", v: a.reg_expiry },
+    { n: "warranty_details", l: "Warranty Details", v: a.warranty_details },
+    { n: "remarks", l: "Technical Specs / Remarks", t: "textarea", v: a.remarks }
   ];
 
-  // Secondary metrics
-  const secondaryK = [
-    [t("kpi_out_service"), d.out_of_service],
-    [t("kpi_waiting_parts"), d.wo_waiting],
-    [t("kpi_pending_insp"), d.pending_inspection],
-    [t("kpi_new_comp"), d.complaints_new],
-    [t("kpi_low_stock"), d.low_stock],
-    [t("kpi_pending_pur"), d.pending_purchases],
-    [t("kpi_exp_docs"), d.expiring_docs],
-    [t("kpi_suppliers"), d.suppliers_count],
-    [t("kpi_hist_records"), d.historical_records]
-  ];
+  async function updateAlertBadge() {
+    if (!ME || !can("asset.view")) return;
+    try {
+      LIVE_ALERTS = await api("/alerts");
 
-  return `
+      // 1. Desktop alert button
+      const b = $("#notifBadge");
+      if (b) {
+        if (LIVE_ALERTS.total > 0) {
+          b.innerHTML = `<span class="dot"></span>🔔 ${t("alerts")} <span class="badge-count">${LIVE_ALERTS.total}</span>`;
+        } else {
+          b.innerHTML = `🔔 ${t("alerts")}`;
+        }
+      }
+
+      // 2. Mobile header alert button
+      const mbAlerts = $("#btnMobileAlerts");
+      if (mbAlerts) {
+        const existingBadge = mbAlerts.querySelector(".badge-count");
+        if (LIVE_ALERTS.total > 0) {
+          if (existingBadge) {
+            existingBadge.textContent = LIVE_ALERTS.total;
+          } else {
+            mbAlerts.insertAdjacentHTML("beforeend", `<span class="badge-count" style="position:absolute;top:2px;right:2px">${LIVE_ALERTS.total}</span>`);
+          }
+        } else if (existingBadge) {
+          existingBadge.remove();
+        }
+      }
+
+      // 3. Mobile bottom nav tab for complaints
+      const compTab = document.querySelector('.bottom-nav-btn[data-id="comp"]');
+      if (compTab) {
+        const pendingCount = LIVE_ALERTS.pending_complaints || 0;
+        let badge = compTab.querySelector(".bottom-nav-badge");
+        if (pendingCount > 0) {
+          if (!badge) {
+            compTab.querySelector(".bottom-nav-icon")?.insertAdjacentHTML("beforeend", `<span class="bottom-nav-badge">${pendingCount}</span>`);
+          } else {
+            badge.textContent = pendingCount;
+          }
+        } else if (badge) {
+          badge.remove();
+        }
+      }
+    } catch (e) { }
+  }
+
+  const V = {}, ACT = {};
+
+  // ---------------- VIEWS ----------------
+  V.dash = async () => {
+    const d = await api("/dashboard");
+    const alerts = await api("/alerts").catch(() => ({ total: 0 }));
+
+    // Primary operational KPIs
+    const primaryK = [
+      [t("kpi_reg_fleet"), d.assets],
+      [t("kpi_active"), d.active],
+      [t("kpi_repair"), d.under_repair],
+      [t("kpi_open_wo"), d.wo_open]
+    ];
+
+    // Secondary metrics
+    const secondaryK = [
+      [t("kpi_out_service"), d.out_of_service],
+      [t("kpi_waiting_parts"), d.wo_waiting],
+      [t("kpi_pending_insp"), d.pending_inspection],
+      [t("kpi_new_comp"), d.complaints_new],
+      [t("kpi_low_stock"), d.low_stock],
+      [t("kpi_pending_pur"), d.pending_purchases],
+      [t("kpi_exp_docs"), d.expiring_docs],
+      [t("kpi_suppliers"), d.suppliers_count],
+      [t("kpi_hist_records"), d.historical_records]
+    ];
+
+    return `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
       <div>
         <h2 class="d" style="margin:0">${t("nav_dash")}</h2>
@@ -1453,11 +1461,11 @@ V.dash = async () => {
       </div>
     </div>
   `;
-};
+  };
 
-V.search = async q => {
-  const d = await api("/search?q=" + encodeURIComponent(q || ""));
-  return `
+  V.search = async q => {
+    const d = await api("/search?q=" + encodeURIComponent(q || ""));
+    return `
     <h2 class="d">Search Results</h2>
     <p class="mu">${d.length} asset(s) matching “${esc(q)}”</p>
     ${tbl([
@@ -1474,45 +1482,45 @@ V.search = async q => {
       ["status", t("status"), r => chip(r.status) + (r.archived ? ' <span class="chip c-reported">Archived</span>' : "")]
     ], d, r => B("open", r.id, "Open Full History"))}
   `;
-};
+  };
 
-V.asset = async id => {
-  const d = await api(`/assets/${id}/history`);
-  const a = d.asset;
-  const kv = [
-    ["Internal Asset ID", a.code],
-    ["Kuwait Reg / Plate No.", a.reg_no || "(Unregistered machinery)"],
-    ["Kuwait Plate Category", a.plate_category || "Commercial / تجاري"],
-    ["Equipment Name", a.name],
-    ["Category", a.category],
-    ["Equipment Type", a.equipment_type || "-"],
-    ["Manufacturer", a.manufacturer || "-"],
-    ["Brand", a.brand || "-"],
-    ["Model", a.model || "-"],
-    ["Manufacturing Year", a.year || "-"],
-    ["VIN / Chassis No.", a.vin || "-"],
-    ["Engine No.", a.engine_no || "-"],
-    ["Permanent Serial No.", a.serial_no || "-"],
-    ["Ownership / Lease", a.ownership_type || "Company Owned / ملك الشركة"],
-    ["Country / Region", a.country || "Kuwait"],
-    ["Kuwait Governorate", a.governorate || "Ahmadi"],
-    ["PACI Number (العنوان الآلي)", a.paci_no || "-"],
-    ["Assigned Operator", a.operator || "(Unassigned)"],
-    ["Operator Civil ID", a.civil_id_operator || "-"],
-    ["Department", a.department || "-"],
-    ["Current Worksite", a.worksite || "(None assigned)"],
-    ["Purchase Date", a.purchase_date || "-"],
-    ["Purchase Cost", a.purchase_cost ? rs(a.purchase_cost) : "-"],
-    ["Insurance Company", a.insurance_company || "-"],
-    ["Insurance Policy", a.insurance_policy || "-"],
-    ["Insurance Expiry", a.insurance_expiry ? `${a.insurance_expiry} ${a.insurance_expiry < new Date().toISOString().slice(0,10) ? '<span class="chip c-reported">Expired</span>' : '<span class="chip c-done">Valid</span>'}` : "-"],
-    ["Technical Inspection (Fahs Fanni)", a.inspection_expiry ? `${a.inspection_expiry} ${a.inspection_expiry < new Date().toISOString().slice(0,10) ? '<span class="chip c-reported">Expired</span>' : '<span class="chip c-done">Valid</span>'}` : "-"],
-    ["Registration Expiry (Daftar)", a.reg_expiry ? `${a.reg_expiry} ${a.reg_expiry < new Date().toISOString().slice(0,10) ? '<span class="chip c-reported">Expired</span>' : '<span class="chip c-done">Valid</span>'}` : "-"],
-    ["Warranty Details", a.warranty_details || "-"],
-    ["Remarks / Specs", a.remarks || "-"]
-  ];
+  V.asset = async id => {
+    const d = await api(`/assets/${id}/history`);
+    const a = d.asset;
+    const kv = [
+      ["Internal Asset ID", a.code],
+      ["Kuwait Reg / Plate No.", a.reg_no || "(Unregistered machinery)"],
+      ["Kuwait Plate Category", a.plate_category || "Commercial / تجاري"],
+      ["Equipment Name", a.name],
+      ["Category", a.category],
+      ["Equipment Type", a.equipment_type || "-"],
+      ["Manufacturer", a.manufacturer || "-"],
+      ["Brand", a.brand || "-"],
+      ["Model", a.model || "-"],
+      ["Manufacturing Year", a.year || "-"],
+      ["VIN / Chassis No.", a.vin || "-"],
+      ["Engine No.", a.engine_no || "-"],
+      ["Permanent Serial No.", a.serial_no || "-"],
+      ["Ownership / Lease", a.ownership_type || "Company Owned / ملك الشركة"],
+      ["Country / Region", a.country || "Kuwait"],
+      ["Kuwait Governorate", a.governorate || "Ahmadi"],
+      ["PACI Number (العنوان الآلي)", a.paci_no || "-"],
+      ["Assigned Operator", a.operator || "(Unassigned)"],
+      ["Operator Civil ID", a.civil_id_operator || "-"],
+      ["Department", a.department || "-"],
+      ["Current Worksite", a.worksite || "(None assigned)"],
+      ["Purchase Date", a.purchase_date || "-"],
+      ["Purchase Cost", a.purchase_cost ? rs(a.purchase_cost) : "-"],
+      ["Insurance Company", a.insurance_company || "-"],
+      ["Insurance Policy", a.insurance_policy || "-"],
+      ["Insurance Expiry", a.insurance_expiry ? `${a.insurance_expiry} ${a.insurance_expiry < new Date().toISOString().slice(0, 10) ? '<span class="chip c-reported">Expired</span>' : '<span class="chip c-done">Valid</span>'}` : "-"],
+      ["Technical Inspection (Fahs Fanni)", a.inspection_expiry ? `${a.inspection_expiry} ${a.inspection_expiry < new Date().toISOString().slice(0, 10) ? '<span class="chip c-reported">Expired</span>' : '<span class="chip c-done">Valid</span>'}` : "-"],
+      ["Registration Expiry (Daftar)", a.reg_expiry ? `${a.reg_expiry} ${a.reg_expiry < new Date().toISOString().slice(0, 10) ? '<span class="chip c-reported">Expired</span>' : '<span class="chip c-done">Valid</span>'}` : "-"],
+      ["Warranty Details", a.warranty_details || "-"],
+      ["Remarks / Specs", a.remarks || "-"]
+    ];
 
-  return `
+    return `
     <div class="noprint" style="margin-bottom:1rem">
       <button class="btn g sm" data-a="back">${t("back")}</button>
     </div>
@@ -1621,11 +1629,11 @@ V.asset = async id => {
       `).join("")}
     </ul>
   `;
-};
+  };
 
-V.assets = async () => {
-  const d = await api("/assets");
-  return `
+  V.assets = async () => {
+    const d = await api("/assets");
+    return `
     <h2 class="d">${t("nav_assets")}</h2>
     <div class="bar2">
       ${can("asset.edit") ? `
@@ -1648,11 +1656,11 @@ V.assets = async () => {
       ["status", t("status"), r => chip(r.status) + (r.archived ? ' <span class="chip c-reported">Archived</span>' : "")]
     ], d, r => B("open", r.id, "Open History"))}
   `;
-};
+  };
 
-V.comp = async () => {
-  const d = await api("/complaints");
-  return `
+  V.comp = async () => {
+    const d = await api("/complaints");
+    return `
     <h2 class="d">${t("nav_comp")}</h2>
     <div class="bar2">
       ${can("complaint.create") ? `<button class="btn" data-a="newC">+ Report Breakdown / Problem</button>` : ""}
@@ -1682,11 +1690,11 @@ V.comp = async () => {
       (can("wo.manage") && r.status === "Approved" ? B("mkWo", r.id, "Create Work Order") : "")
     ))}
   `;
-};
+  };
 
-V.wo = async () => {
-  const d = await api("/work-orders");
-  return `
+  V.wo = async () => {
+    const d = await api("/work-orders");
+    return `
     <h2 class="d">${t("nav_wo")}</h2>
     <div class="bar2">
       ${can("wo.manage") ? `<button class="btn" data-a="newW">+ New Work Order</button>` : ""}
@@ -1710,11 +1718,11 @@ V.wo = async () => {
       ${can("wo.update") ? B("upWoDoc", r.id, "Upload Doc / Voice") : ""}
     `)}
   `;
-};
+  };
 
-V.parts = async q => {
-  const d = await api("/parts" + (q ? "?q=" + encodeURIComponent(q) : ""));
-  return `
+  V.parts = async q => {
+    const d = await api("/parts" + (q ? "?q=" + encodeURIComponent(q) : ""));
+    return `
     <h2 class="d">${t("nav_parts")}</h2>
     <div class="bar2">
       ${can("inventory.manage") ? `<button class="btn" data-a="newP">+ Add Spare Part</button>` : ""}
@@ -1740,11 +1748,11 @@ V.parts = async q => {
       B("phist", r.id, "History")
     ))}
   `;
-};
+  };
 
-V.pur = async () => {
-  const d = await api("/purchases");
-  return `
+  V.pur = async () => {
+    const d = await api("/purchases");
+    return `
     <h2 class="d">${t("nav_pur")}</h2>
     <div class="bar2">
       ${can("purchase.create") ? `<button class="btn" data-a="newU">+ External Purchase Request</button>` : ""}
@@ -1768,11 +1776,11 @@ V.pur = async () => {
       B("purDocs", r.id, "📎 Docs (" + (r.doc_count || (r.bill_id ? 1 : 0)) + ")")
     ))}
   `;
-};
+  };
 
-V.sup = async () => {
-  const d = await api("/suppliers?all=1");
-  return `
+  V.sup = async () => {
+    const d = await api("/suppliers?all=1");
+    return `
     <h2 class="d">${t("nav_sup")}</h2>
     <div class="bar2">
       ${can("supplier.manage") ? `<button class="btn" data-a="addSup">+ Add Supplier</button>` : ""}
@@ -1792,11 +1800,11 @@ V.sup = async () => {
       ${can("supplier.manage") ? B("editSup", r.id, "Edit") + B("toggleSup", r.id, r.active ? "Deactivate" : "Activate") : ""}
     `)}
   `;
-};
+  };
 
-V.exp = async () => {
-  const d = await api("/expenses");
-  return `
+  V.exp = async () => {
+    const d = await api("/expenses");
+    return `
     <h2 class="d">${t("nav_exp")}</h2>
     <div class="bar2">
       ${can("expense.manage") ? `<button class="btn" data-a="newE">+ Record External Expense</button>` : ""}
@@ -1811,11 +1819,11 @@ V.exp = async () => {
       ["bill_id", "Original Receipt", r => bill(r.bill_id)]
     ], d)}
   `;
-};
+  };
 
-V.hist = async () => {
-  const d = await api("/historical");
-  return `
+  V.hist = async () => {
+    const d = await api("/historical");
+    return `
     <h2 class="d">${t("nav_hist")}</h2>
     <div class="bar2">
       ${can("asset.edit") ? `
@@ -1837,12 +1845,12 @@ V.hist = async () => {
       ["doc_id", "Scanned Paper", r => docLink(r.doc_id)]
     ], d, r => B("open", r.asset_id, "View Asset"))}
   `;
-};
+  };
 
-V.reports = async () => {
-  const rtype = $("#repType") ? $("#repType").value : "assets";
-  const repData = await api(`/reports/export?type=${rtype}&format=json`).catch(() => ({ headers: [], rows: [] }));
-  return `
+  V.reports = async () => {
+    const rtype = $("#repType") ? $("#repType").value : "assets";
+    const repData = await api(`/reports/export?type=${rtype}&format=json`).catch(() => ({ headers: [], rows: [] }));
+    return `
     <h2 class="d">${t("nav_reports")}</h2>
     <div class="report-toolbar card">
       <label class="report-select-group">
@@ -1886,19 +1894,19 @@ V.reports = async () => {
       </div>
     </div>
   `;
-};
+  };
 
-V.alerts = async () => {
-  const [al, notifs] = await Promise.all([api("/alerts"), api("/notifications")]);
-  const unreadNotifs = (notifs || []).filter(n => !n.read);
-  const compCount = (al.complaints_list || []).length;
-  const regCount = (al.insurance_expiring?.length || 0) + (al.reg_expiring?.length || 0);
-  const inspCount = (al.inspection_expiring || []).length;
-  const partsCount = (al.low_stock || []).length;
-  const woCount = (al.wo_inspections_list || []).length;
-  const purCount = (al.purchases_list || []).length;
+  V.alerts = async () => {
+    const [al, notifs] = await Promise.all([api("/alerts"), api("/notifications")]);
+    const unreadNotifs = (notifs || []).filter(n => !n.read);
+    const compCount = (al.complaints_list || []).length;
+    const regCount = (al.insurance_expiring?.length || 0) + (al.reg_expiring?.length || 0);
+    const inspCount = (al.inspection_expiring || []).length;
+    const partsCount = (al.low_stock || []).length;
+    const woCount = (al.wo_inspections_list || []).length;
+    const purCount = (al.purchases_list || []).length;
 
-  return `
+    return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
       <div>
         <h2 class="d" style="margin:0">${t("alerts")}</h2>
@@ -1934,7 +1942,7 @@ V.alerts = async () => {
                 <span class="chip ${c.priority === 'Critical' ? 'c-crit' : (c.priority === 'High' ? 'c-high' : 'c-reported')}">${esc(c.priority)}</span>
                 <span class="chip c-reported">${esc(c.status)}</span>
               </div>
-              <small class="mu" style="display:block;margin-top:.25rem">${esc(c.description.slice(0, 75))}${c.description.length > 75 ? '...' : ''}</small>
+              <small class="mu" style="display:block;margin-top:.25rem">${esc((c.description || c.desc || "").slice(0, 75))}${(c.description || c.desc || "").length > 75 ? '...' : ''}</small>
             </div>
             <button class="btn sm" data-a="nav" data-id="comp">Review →</button>
           </div>
@@ -1999,7 +2007,7 @@ V.alerts = async () => {
           <div class="row" style="justify-content:space-between;border-bottom:1px solid var(--ln);padding-bottom:.5rem">
             <div style="flex:1;padding-right:.75rem">
               <b>${esc(w.code)} · ${esc(w.asset_code)}</b>
-              <p style="margin:.2rem 0;font-size:.85rem">${esc(w.description.slice(0, 70))}</p>
+              <p style="margin:.2rem 0;font-size:.85rem">${esc((w.description || w.desc || "").slice(0, 70))}</p>
               <span class="chip c-assigned">${esc(w.status)}</span>
             </div>
             <button class="btn sm" data-a="nav" data-id="wo">Inspect →</button>
@@ -2045,11 +2053,11 @@ V.alerts = async () => {
       </div>
     </div>
   `;
-};
+  };
 
-V.ws = async () => {
-  const d = await api("/worksites?all=1");
-  return `
+  V.ws = async () => {
+    const d = await api("/worksites?all=1");
+    return `
     <h2 class="d">${t("nav_ws")}</h2>
     <div class="bar2">
       ${can("asset.edit") ? `<button class="btn" data-a="addWs">+ Add Kuwait Worksite</button>` : ""}
@@ -2063,16 +2071,17 @@ V.ws = async () => {
       ["active", t("status"), r => r.active ? '<span class="chip c-done">Active</span>' : '<span class="chip c-reported">Inactive</span>']
     ], d, r => can("asset.edit") ? B("editWs", r.id, "Edit Details") : "")}
   `;
-};
+  };
 
 V.admin = async () => {
-  const [uList, bList, audList] = await Promise.all([
+  const [uList, bResp, audList] = await Promise.all([
     api("/users"),
-    can("settings") ? api("/admin/backups") : [],
+    can("settings") ? api("/admin/backups") : { backups: [] },
     api("/audit")
   ]);
+  const bList = Array.isArray(bResp) ? bResp : (bResp?.backups || []);
 
-  return `
+    return `
     <h2 class="d">${t("nav_admin")}</h2>
     <div class="bar2">
       <button class="btn" data-a="addU">+ Create User</button>
@@ -2099,7 +2108,7 @@ V.admin = async () => {
       <div class="bar2">
         <button class="btn" data-a="bk">Create Database Backup</button>
       </div>
-      <p class="mu">${bList.length ? "Available snapshots: " + bList.slice(0, 5).join(", ") : "No snapshots created."}</p>
+      <p class="mu">${bList.length ? "Available snapshots: " + bList.slice(0, 5).map(b => (typeof b === "string" ? b : b.filename)).join(", ") : "No snapshots created."}</p>
     ` : ""}
 
     <h3 class="d" style="margin-top:2.5rem">System Audit Log</h3>
@@ -2112,431 +2121,433 @@ V.admin = async () => {
       ["detail", "Details"]
     ], audList)}
   `;
-};
+  };
 
-// ---------------- NAVIGATION CONFIG ----------------
-const NAV = [
-  ["dash", () => t("nav_dash"), () => can("asset.view")],
-  ["assets", () => t("nav_assets"), () => can("asset.view")],
-  ["comp", () => t("nav_comp"), () => any("complaint.create", "complaint.review", "asset.view")],
-  ["wo", () => t("nav_wo"), () => can("wo.view")],
-  ["parts", () => t("nav_parts"), () => can("inventory.view")],
-  ["pur", () => t("nav_pur"), () => any("purchase.create", "purchase.approve", "purchase.record")],
-  ["sup", () => t("nav_sup"), () => can("supplier.view")],
-  ["exp", () => t("nav_exp"), () => can("expense.view")],
-  ["hist", () => t("nav_hist"), () => can("historical.view")],
-  ["reports", () => t("nav_reports"), () => can("report.view")],
-  ["ws", () => t("nav_ws"), () => can("asset.view")],
-  ["admin", () => t("nav_admin"), () => can("user.manage")]
-];
+  // ---------------- NAVIGATION CONFIG ----------------
+  const NAV = [
+    ["dash", () => t("nav_dash"), () => can("asset.view")],
+    ["assets", () => t("nav_assets"), () => can("asset.view")],
+    ["comp", () => t("nav_comp"), () => any("complaint.create", "complaint.review", "asset.view")],
+    ["wo", () => t("nav_wo"), () => can("wo.view")],
+    ["parts", () => t("nav_parts"), () => can("inventory.view")],
+    ["pur", () => t("nav_pur"), () => any("purchase.create", "purchase.approve", "purchase.record")],
+    ["sup", () => t("nav_sup"), () => can("supplier.view")],
+    ["exp", () => t("nav_exp"), () => can("expense.view")],
+    ["hist", () => t("nav_hist"), () => can("historical.view")],
+    ["reports", () => t("nav_reports"), () => can("report.view")],
+    ["ws", () => t("nav_ws"), () => can("asset.view")],
+    ["admin", () => t("nav_admin"), () => can("user.manage")]
+  ];
 
-function toggleMobileDrawer(force) {
-  const overlay = $("#drawerOverlay");
-  if (!overlay) return;
-  const isOpen = force !== undefined ? force : !overlay.classList.contains("open");
-  overlay.classList.toggle("open", isOpen);
-  document.body.style.overflow = isOpen ? "hidden" : "";
-}
-
-function toggleMobileSearch(force) {
-  const bar = $("#mobileSearchBar");
-  if (!bar) return;
-  const isOpen = force !== undefined ? force : !bar.classList.contains("open");
-  bar.classList.toggle("open", isOpen);
-  if (isOpen) {
-    const inp = $("#mobileQueryInput");
-    if (inp) setTimeout(() => inp.focus(), 100);
-  }
-}
-
-async function go(v, a, back) {
-  if (!back) HIST.push([v, a]);
-
-  // 1. Desktop Nav
-  const dNav = $("#nav");
-  if (dNav) {
-    dNav.innerHTML = NAV.filter(n => n[2]()).map(n => `<button data-a="nav" data-id="${n[0]}" class="${n[0] === v ? "on" : ""}">${n[1]()}</button>`).join("");
+  function toggleMobileDrawer(force) {
+    const overlay = $("#drawerOverlay");
+    if (!overlay) return;
+    const isOpen = force !== undefined ? force : !overlay.classList.contains("open");
+    overlay.classList.toggle("open", isOpen);
+    document.body.style.overflow = isOpen ? "hidden" : "";
   }
 
-  // 2. Mobile Bottom Nav active state
-  $$(".bottom-nav-btn").forEach(btn => {
-    const bid = btn.dataset.id;
-    if (bid === v) {
-      btn.classList.add("active");
-    } else if (bid === "menu-drawer" && !["dash", "assets", "comp", "wo"].includes(v)) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
+  function toggleMobileSearch(force) {
+    const bar = $("#mobileSearchBar");
+    if (!bar) return;
+    const isOpen = force !== undefined ? force : !bar.classList.contains("open");
+    bar.classList.toggle("open", isOpen);
+    if (isOpen) {
+      const inp = $("#mobileQueryInput");
+      if (inp) setTimeout(() => inp.focus(), 100);
     }
-  });
-
-  // 3. Mobile Drawer active state
-  $$(".drawer-item").forEach(item => {
-    item.classList.toggle("active", item.dataset.id === v);
-  });
-
-  // 4. Auto-close drawer & search
-  toggleMobileDrawer(false);
-  toggleMobileSearch(false);
-
-  // 5. Reset scroll
-  window.scrollTo({ top: 0, behavior: "instant" });
-  const mainEl = $("#main");
-  if (mainEl) {
-    mainEl.innerHTML = `<p class="mu" style="padding:2rem 0">Loading...</p>`;
-    mainEl.scrollTop = 0;
   }
 
-  try {
-    if (V[v]) {
-      mainEl.innerHTML = await V[v](a);
-    } else {
-      mainEl.innerHTML = `<p class="err">View not found: ${esc(v)}</p>`;
-    }
-    const pq = $("#pq");
-    if (pq) pq.onsubmit = e => { e.preventDefault(); go("parts", pq.querySelector("input").value); };
-    const btnGen = $("#btnGenRep");
-    if (btnGen) {
-      btnGen.onclick = () => go("reports");
-      $("#repType").onchange = () => {
-        const tok = localStorage.getItem("fleethub_token");
-        $("#btnCsvRep").href = `/api/reports/export?type=${$("#repType").value}&format=csv` + (tok ? `&token=${encodeURIComponent(tok)}` : "");
-      };
+  async function go(v, a, back) {
+    if (!back) HIST.push([v, a]);
+
+    // 1. Desktop Nav
+    const dNav = $("#nav");
+    if (dNav) {
+      dNav.innerHTML = NAV.filter(n => n[2]()).map(n => `<button data-a="nav" data-id="${n[0]}" class="${n[0] === v ? "on" : ""}">${n[1]()}</button>`).join("");
     }
 
-    // Attach secondary KPIs accordion toggle on dashboard
-    const btnToggleKpis = $("#btnToggleMoreKpis");
-    if (btnToggleKpis) {
-      btnToggleKpis.onclick = () => {
-        const sec = $("#secondaryKpisContainer");
-        if (sec) {
-          const isHidden = sec.style.display === "none";
-          sec.style.display = isHidden ? "grid" : "none";
-          btnToggleKpis.querySelector("span").textContent = isHidden ? (t("collapse_kpis") || "Show Fewer Metrics ▴") : (t("all_kpis") || "Show All Fleet & Store Metrics (9 more) ▾");
-        }
-      };
+    // 2. Mobile Bottom Nav active state
+    $$(".bottom-nav-btn").forEach(btn => {
+      const bid = btn.dataset.id;
+      if (bid === v) {
+        btn.classList.add("active");
+      } else if (bid === "menu-drawer" && !["dash", "assets", "comp", "wo"].includes(v)) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    // 3. Mobile Drawer active state
+    $$(".drawer-item").forEach(item => {
+      item.classList.toggle("active", item.dataset.id === v);
+    });
+
+    // 4. Auto-close drawer & search
+    toggleMobileDrawer(false);
+    toggleMobileSearch(false);
+
+    // 5. Reset scroll
+    window.scrollTo({ top: 0, behavior: "instant" });
+    const mainEl = $("#main");
+    if (mainEl) {
+      mainEl.innerHTML = `<p class="mu" style="padding:2rem 0">Loading...</p>`;
+      mainEl.scrollTop = 0;
     }
 
-    updateAlertBadge();
-  } catch (e) {
-    mainEl.innerHTML = `<p class="err">${esc(e.message)}</p>`;
-  }
-}
-
-const refresh = () => {
-  const active = document.activeElement;
-  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT") && $("#main")?.contains(active)) {
-    return;
-  }
-  const h = HIST.pop() || ["dash"];
-  return go(h[0], h[1]);
-};
-
-const run = async f => {
-  try { await f(); } catch (e) { toast(e.message); }
-};
-
-const SYNC_BUS = window.BroadcastChannel ? new BroadcastChannel("fleethub_sync") : null;
-
-const done = m => {
-  toast(m);
-  if (SYNC_BUS) SYNC_BUS.postMessage({ type: "mutation", at: Date.now() });
-  return refresh();
-};
-
-// ---------------- ACTIONS ----------------
-ACT.nav = d => go(d.id);
-ACT.toggleDrawer = () => toggleMobileDrawer();
-ACT.toggleSearch = () => toggleMobileSearch();
-ACT.open = d => go("asset", d.id);
-ACT.back = () => {
-  HIST.pop();
-  const h = HIST.pop() || ["dash"];
-  go(h[0], h[1]);
-};
-ACT.out = async () => {
-  localStorage.removeItem("fleethub_token");
-  await post("/logout");
-  ME = null;
-  boot();
-};
-
-ACT.addA = async () => {
-  const [ws, cats] = await Promise.all([api("/worksites"), api("/categories?kind=asset")]);
-  const f = await ask("Register Equipment / Vehicle", AFS({}, ws, cats), "remarks");
-  if (!f) return;
-  const r = await post("/assets", fj(f));
-  await done("Registered " + r.code);
-};
-
-ACT.editA = async d => {
-  const [h, ws, cats] = await Promise.all([api(`/assets/${d.id}/history`), api("/worksites"), api("/categories?kind=asset")]);
-  const f = await ask("Edit Equipment Specifications", AFS(h.asset, ws, cats), "remarks");
-  if (!f) return;
-  await put(`/assets/${d.id}`, fj(f));
-  await done("Asset information updated.");
-};
-
-ACT.transferA = async d => {
-  const wsList = await api("/worksites");
-  const f = await ask("Relocate Asset / Transfer Worksite", [
-    { n: "to_site_id", l: "Destination Kuwait Worksite", t: "select", o: opts(wsList, "id", w => `${w.name} (${w.governorate || 'Kuwait'})`), r: 1 },
-    { n: "reason", l: "Transfer Reason / Project Deployment Ref", r: 1 },
-    { n: "odometer_hours", l: "Current Odometer (km) or Operating Hours", t: "number" },
-    { n: "transporter", l: "Transporter / Lowbed Carrier / Driver Name" }
-  ]);
-  if (!f) return;
-  await post(`/assets/${d.id}/transfer`, fj(f));
-  await done("Asset worksite transfer logged successfully.");
-  go("asset", d.id);
-};
-
-ACT.arch = async d => {
-  if (!confirm("Toggle active/archive state for this asset?")) return;
-  await post(`/assets/${d.id}/archive`);
-  await done("Status updated.");
-};
-
-ACT.upDoc = async d => {
-  const f = await ask("Upload Document or Photo", [
-    { n: "kind", l: "Document Type", t: "select", o: ["Registration", "Insurance Certificate", "Inspection Certificate", "Photograph", "Job Card", "Technical Spec", "Other"].map(x => [x, x]) },
-    { n: "file", l: "Document / Image (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 }
-  ]);
-  if (!f) return;
-  await post(`/assets/${d.id}/documents`, f);
-  await done("Document uploaded.");
-};
-
-ACT.impA = async () => {
-  const f = await ask("Bulk Import Equipment (CSV)", [
-    { n: "file", l: "CSV File (UTF-8)", t: "file", r: 1 }
-  ]);
-  if (!f) return;
-  const r = await post("/assets/import", f);
-  await done(`Import complete: ${r.imported} added.`);
-};
-
-// Complaint with Voice Recorder & Translation
-ACT.newC = async () => {
-  const f = await ask("Report Breakdown or Equipment Problem", [
-    { n: "asset_id", l: "Vehicle / Equipment", t: "select", o: await aOpts(!can("asset.view")), r: 1 },
-    { n: "location", l: "Current Location / Worksite" },
-    { n: "category", l: "Problem Category", t: "select", o: ["Breakdown", "Unusual Sound", "Hydraulic Leak", "Brake Problem", "Engine Overheating", "Damage", "Electrical", "Performance Issue", "Other"].map(x => [x, x]) },
-    { n: "description", l: "Detailed Problem Description (English Translation will appear here)", t: "textarea", r: 1 },
-    { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" },
-    { n: "photo", l: "Attachment / Photo (Optional)", t: "file" }
-  ], "description");
-  if (!f) return;
-  const r = await post("/complaints", f);
-  await done("Complaint " + r.code + " registered and forwarded to Transport.");
-};
-
-ACT.decide = async d => {
-  const f = await ask(d.d === "approve" ? "Approve Complaint" : (d.d === "reject" ? "Reject Complaint" : "Request More Information"), [
-    { n: "note", l: d.d === "approve" ? "Approval Note (Optional)" : "Reason / Information Requested", t: "textarea", r: d.d !== "approve" },
-    { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" }
-  ]);
-  if (!f) return;
-  await post(`/complaints/${d.id}/decide`, { ...fj(f), decision: d.d });
-  await done("Complaint decision recorded.");
-};
-
-ACT.mkWo = async d => {
-  const f = await ask("Generate Work Order from Complaint", [
-    { n: "category", l: "Maintenance Category", v: "Repair" },
-    { n: "assignee", l: "Assign Mechanic (Full Name)" }
-  ]);
-  if (!f) return;
-  const r = await post("/work-orders", { ...fj(f), complaint_id: d.id });
-  await done("Work order " + r.code + " created.");
-};
-
-ACT.newW = async () => {
-  const f = await ask("Create Standalone Work Order", [
-    { n: "asset_id", l: "Select Equipment / Vehicle", t: "select", o: await aOpts(), r: 1 },
-    { n: "category", l: "Work Category", v: "Routine Service" },
-    { n: "description", l: "Work Order Description (English)", t: "textarea", r: 1 },
-    { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" },
-    { n: "assignee", l: "Assigned Mechanic / Lead" }
-  ], "description");
-  if (!f) return;
-  const r = await post("/work-orders", fj(f));
-  await done("Work order " + r.code + " created.");
-};
-
-ACT.woNext = async d => {
-  const f = await ask("Advance Work Order Status to: " + d.s, [
-    ...(d.s === "Assigned" ? [{ n: "assignee", l: "Assign Mechanic (Full Name)", r: 1 }] : []),
-    { n: "note", l: "Inspection Findings / Completion Note", t: "textarea" }
-  ], "note");
-  if (!f) return;
-  await post(`/work-orders/${d.id}/status`, { ...fj(f), status: d.s });
-  await done("Status updated.");
-};
-
-ACT.upWoDoc = async d => {
-  const f = await ask("Upload Work Order Attachment / Voice Note", [
-    { n: "kind", l: "Attachment Type", t: "select", o: ["Repair photograph", "Voice recording", "Inspection Sheet", "Job Card", "Other"].map(x => [x, x]) },
-    { n: "file", l: "Document / Image / Audio (PDF, JPG, PNG, WebM, WAV)", t: "file", r: 1 }
-  ]);
-  if (!f) return;
-  await post(`/work-orders/${d.id}/documents`, f);
-  await done("Work order attachment uploaded.");
-};
-
-ACT.newP = async () => {
-  const [supList, catList] = await Promise.all([api("/suppliers"), api("/categories?kind=part")]);
-  const f = await ask("Add Spare Part to Catalogue", [
-    { n: "name", l: "Part Name", r: 1 },
-    { n: "stock_id", l: "Stock ID (Leave blank to generate)" },
-    { n: "category", l: "Category", t: "select", o: catList.map(c => [c.name, c.name]) },
-    { n: "manufacturer", l: "Manufacturer" },
-    { n: "oem_no", l: "OEM Part Number" },
-    { n: "compat", l: "Compatible Makes / Models" },
-    { n: "unit", l: "Unit of Measure", v: "pcs" },
-    { n: "min_qty", l: "Minimum Level", t: "number", v: 1 },
-    { n: "unit_cost", l: "Unit Cost (KWD)", t: "number", v: 0 },
-    { n: "location", l: "Storage Location" },
-    { n: "supplier_id", l: "Preferred Supplier", t: "select", o: opts(supList, "id", s => s.name, "(None)") }
-  ]);
-  if (!f) return;
-  const r = await post("/parts", fj(f));
-  await done("Added part: " + r.stock_id);
-};
-
-ACT.stockIn = async d => {
-  const f = await ask("Stock In (Receive Inventory)", [
-    { n: "qty", l: "Quantity Received", t: "number", r: 1 },
-    { n: "unit_cost", l: "Unit Purchase Cost (KWD)", t: "number" },
-    { n: "note", l: "Delivery Note Ref" }
-  ]);
-  if (!f) return;
-  await post(`/parts/${d.id}/stock`, { ...fj(f), kind: "in" });
-  await done("Inventory updated.");
-};
-
-ACT.adjust = async d => {
-  const f = await ask("Reconcile Stock Count", [
-    { n: "qty", l: "Counted Quantity", t: "number", r: 1 },
-    { n: "note", l: "Reason (Required)", r: 1 }
-  ], "note");
-  if (!f) return;
-  await post(`/parts/${d.id}/stock`, { ...fj(f), kind: "adjust" });
-  await done("Stock adjusted.");
-};
-
-ACT.issue = async d => {
-  const f = await ask("Issue Spare Part to Work Order", [
-    { n: "wo_id", l: "Select Work Order", t: "select", o: await woOpts(), r: 1 },
-    { n: "qty", l: "Quantity", t: "number", r: 1 }
-  ]);
-  if (!f) return;
-  await post(`/parts/${d.id}/issue`, fj(f));
-  await done("Part issued to work order.");
-};
-
-ACT.ret = async d => {
-  const f = await ask("Return Part from Work Order", [
-    { n: "wo_id", l: "Select Work Order", t: "select", o: await woOpts(), r: 1 },
-    { n: "qty", l: "Quantity", t: "number", r: 1 }
-  ]);
-  if (!f) return;
-  await post(`/parts/${d.id}/return`, fj(f));
-  await done("Part returned to stock.");
-};
-
-ACT.phist = async d => {
-  const h = await api(`/parts/${d.id}/history`);
-  show("Stock Movement History", tbl([
-    ["at", "Timestamp"],
-    ["kind", "Action", r => chip(r.kind.toUpperCase())],
-    ["qty", "Qty"],
-    ["prev_qty", "Before"],
-    ["new_qty", "After"],
-    ["asset_code", "Asset"],
-    ["wo_code", "Work Order"],
-    ["by", "Handled By"]
-  ], h));
-};
-
-const CURR_OPTS = [
-  ["KWD", "KWD - Kuwaiti Dinar (Default Base)"],
-  ["USD", "USD - US Dollar"],
-  ["EUR", "EUR - Euro"],
-  ["GBP", "GBP - British Pound"],
-  ["AED", "AED - UAE Dirham"],
-  ["SAR", "SAR - Saudi Riyal"],
-  ["QAR", "QAR - Qatari Riyal"],
-  ["BHD", "BHD - Bahraini Dinar"],
-  ["OMR", "OMR - Omani Rial"],
-  ["INR", "INR - Indian Rupee"],
-  ["JPY", "JPY - Japanese Yen"],
-  ["CNY", "CNY - Chinese Yuan"]
-];
-
-ACT.newU = async () => {
-  const [partsList, supList] = await Promise.all([api("/parts"), api("/suppliers")]);
-  const f = await ask("Request External Purchase", [
-    { n: "bill", l: "📄 Upload Quotation / Invoice / Bill (Optional - AI Auto-Fills Form)", t: "file" },
-    { n: "part_name", l: "Part Name / Description", r: 1 },
-    { n: "qty", l: "Quantity", t: "number", r: 1 },
-    { n: "part_id", l: "Catalogue Match", t: "select", o: opts(partsList, "id", p => `${p.stock_id} · ${p.name} (${p.qty} in stock)`, "(Not in catalogue)") },
-    { n: "wo_id", l: "Work Order", t: "select", o: await woOpts("(None, stock purchase)") },
-    { n: "to_stock", l: "Destination", t: "select", o: [["0", "Direct to Work Order"], ["1", "Add to Inventory"]] },
-    { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
-    { n: "est_price", l: "Estimated Unit Price", t: "number" },
-    { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
-    { n: "supplier_id", l: "Supplier", t: "select", o: opts(supList, "id", s => s.name, "(Other)") },
-    { n: "supplier", l: "Supplier / Outside Shop Name" }
-  ]);
-  if (!f) return;
-  const r = await post("/purchases", fj(f));
-  await done("Purchase request " + r.code + " submitted.");
-};
-
-ACT.pdec = async d => {
-  const act = d.d === "approve" ? "Approve" : "Reject";
-  if (!confirm(`${act} this external purchase request?`)) return;
-  await post(`/purchases/${d.id}/decide`, { decision: d.d });
-  await done(`Purchase request ${act.toLowerCase()}d.`);
-};
-
-ACT.prec = async d => {
-  const f = await ask("Record Actual Purchase & Upload Original Bill", [
-    { n: "bill", l: "Original Bill / Invoice / Receipt (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 },
-    { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
-    { n: "unit_price", l: "Actual Unit Price", t: "number", r: 1 },
-    { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
-    { n: "invoice_no", l: "Invoice / Bill Number", r: 1 },
-    { n: "supplier", l: "Supplier Name" },
-    { n: "doc_kind", l: "Document Type", t: "select", o: [
-      ["External Purchase Bill", "External Purchase Bill"],
-      ["Supplier Invoice", "Supplier Invoice"],
-      ["Purchase Receipt", "Purchase Receipt"],
-      ["Supporting Document", "Supporting Document"]
-    ], v: "External Purchase Bill" }
-  ]);
-  if (!f) return;
-  await post(`/purchases/${d.id}/record`, f);
-  await done("Purchase recorded and bill saved.");
-};
-
-ACT.purDocs = async d => {
-  const purchaseId = d.id;
-  async function renderModal() {
-    let res = { documents: [], purchase: {} };
     try {
-      res = await api(`/purchases/${purchaseId}/documents`);
+      if (V[v]) {
+        mainEl.innerHTML = await V[v](a);
+      } else {
+        mainEl.innerHTML = `<p class="err">View not found: ${esc(v)}</p>`;
+      }
+      const pq = $("#pq");
+      if (pq) pq.onsubmit = e => { e.preventDefault(); go("parts", pq.querySelector("input").value); };
+      const btnGen = $("#btnGenRep");
+      if (btnGen) {
+        btnGen.onclick = () => go("reports");
+        $("#repType").onchange = () => {
+          const tok = localStorage.getItem("fleethub_token");
+          $("#btnCsvRep").href = `/api/reports/export?type=${$("#repType").value}&format=csv` + (tok ? `&token=${encodeURIComponent(tok)}` : "");
+        };
+      }
+
+      // Attach secondary KPIs accordion toggle on dashboard
+      const btnToggleKpis = $("#btnToggleMoreKpis");
+      if (btnToggleKpis) {
+        btnToggleKpis.onclick = () => {
+          const sec = $("#secondaryKpisContainer");
+          if (sec) {
+            const isHidden = sec.style.display === "none";
+            sec.style.display = isHidden ? "grid" : "none";
+            btnToggleKpis.querySelector("span").textContent = isHidden ? (t("collapse_kpis") || "Show Fewer Metrics ▴") : (t("all_kpis") || "Show All Fleet & Store Metrics (9 more) ▾");
+          }
+        };
+      }
+
+      updateAlertBadge();
     } catch (e) {
-      alert("Failed to load documents: " + e.message);
+      mainEl.innerHTML = `<p class="err">${esc(e.message)}</p>`;
+    }
+  }
+
+  const refresh = () => {
+    const active = document.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT") && $("#main")?.contains(active)) {
       return;
     }
-    const docs = res.documents || [];
-    const p = res.purchase || {};
+    const h = HIST.pop() || ["dash"];
+    return go(h[0], h[1]);
+  };
 
-    const dlg = document.createElement("dialog");
-    dlg.className = "dlg pur-doc-modal";
-    dlg.innerHTML = `
+  const run = async f => {
+    try { await f(); } catch (e) { toast(e.message); }
+  };
+
+  const SYNC_BUS = window.BroadcastChannel ? new BroadcastChannel("fleethub_sync") : null;
+
+  const done = m => {
+    toast(m);
+    if (SYNC_BUS) SYNC_BUS.postMessage({ type: "mutation", at: Date.now() });
+    return refresh();
+  };
+
+  // ---------------- ACTIONS ----------------
+  ACT.nav = d => go(d.id);
+  ACT.toggleDrawer = () => toggleMobileDrawer();
+  ACT.toggleSearch = () => toggleMobileSearch();
+  ACT.open = d => go("asset", d.id);
+  ACT.back = () => {
+    HIST.pop();
+    const h = HIST.pop() || ["dash"];
+    go(h[0], h[1]);
+  };
+  ACT.out = async () => {
+    localStorage.removeItem("fleethub_token");
+    await post("/logout");
+    ME = null;
+    boot();
+  };
+
+  ACT.addA = async () => {
+    const [ws, cats] = await Promise.all([api("/worksites"), api("/categories?kind=asset")]);
+    const f = await ask("Register Equipment / Vehicle", AFS({}, ws, cats), "remarks");
+    if (!f) return;
+    const r = await post("/assets", fj(f));
+    await done("Registered " + r.code);
+  };
+
+  ACT.editA = async d => {
+    const [h, ws, cats] = await Promise.all([api(`/assets/${d.id}/history`), api("/worksites"), api("/categories?kind=asset")]);
+    const f = await ask("Edit Equipment Specifications", AFS(h.asset, ws, cats), "remarks");
+    if (!f) return;
+    await put(`/assets/${d.id}`, fj(f));
+    await done("Asset information updated.");
+  };
+
+  ACT.transferA = async d => {
+    const wsList = await api("/worksites");
+    const f = await ask("Relocate Asset / Transfer Worksite", [
+      { n: "to_site_id", l: "Destination Kuwait Worksite", t: "select", o: opts(wsList, "id", w => `${w.name} (${w.governorate || 'Kuwait'})`), r: 1 },
+      { n: "reason", l: "Transfer Reason / Project Deployment Ref", r: 1 },
+      { n: "odometer_hours", l: "Current Odometer (km) or Operating Hours", t: "number" },
+      { n: "transporter", l: "Transporter / Lowbed Carrier / Driver Name" }
+    ]);
+    if (!f) return;
+    await post(`/assets/${d.id}/transfer`, fj(f));
+    await done("Asset worksite transfer logged successfully.");
+    go("asset", d.id);
+  };
+
+  ACT.arch = async d => {
+    if (!confirm("Toggle active/archive state for this asset?")) return;
+    await post(`/assets/${d.id}/archive`);
+    await done("Status updated.");
+  };
+
+  ACT.upDoc = async d => {
+    const f = await ask("Upload Document or Photo", [
+      { n: "kind", l: "Document Type", t: "select", o: ["Registration", "Insurance Certificate", "Inspection Certificate", "Photograph", "Job Card", "Technical Spec", "Other"].map(x => [x, x]) },
+      { n: "file", l: "Document / Image (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 }
+    ]);
+    if (!f) return;
+    await post(`/assets/${d.id}/documents`, f);
+    await done("Document uploaded.");
+  };
+
+  ACT.impA = async () => {
+    const f = await ask("Bulk Import Equipment (CSV)", [
+      { n: "file", l: "CSV File (UTF-8)", t: "file", r: 1 }
+    ]);
+    if (!f) return;
+    const r = await post("/assets/import", f);
+    await done(`Import complete: ${r.imported} added.`);
+  };
+
+  // Complaint with Voice Recorder & Translation
+  ACT.newC = async () => {
+    const f = await ask("Report Breakdown or Equipment Problem", [
+      { n: "asset_id", l: "Vehicle / Equipment", t: "select", o: await aOpts(!can("asset.view")), r: 1 },
+      { n: "location", l: "Current Location / Worksite" },
+      { n: "category", l: "Problem Category", t: "select", o: ["Breakdown", "Unusual Sound", "Hydraulic Leak", "Brake Problem", "Engine Overheating", "Damage", "Electrical", "Performance Issue", "Other"].map(x => [x, x]) },
+      { n: "description", l: "Detailed Problem Description (English Translation will appear here)", t: "textarea", r: 1 },
+      { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" },
+      { n: "photo", l: "Attachment / Photo (Optional)", t: "file" }
+    ], "description");
+    if (!f) return;
+    const r = await post("/complaints", f);
+    await done("Complaint " + r.code + " registered and forwarded to Transport.");
+  };
+
+  ACT.decide = async d => {
+    const f = await ask(d.d === "approve" ? "Approve Complaint" : (d.d === "reject" ? "Reject Complaint" : "Request More Information"), [
+      { n: "note", l: d.d === "approve" ? "Approval Note (Optional)" : "Reason / Information Requested", t: "textarea", r: d.d !== "approve" },
+      { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" }
+    ]);
+    if (!f) return;
+    await post(`/complaints/${d.id}/decide`, { ...fj(f), decision: d.d });
+    await done("Complaint decision recorded.");
+  };
+
+  ACT.mkWo = async d => {
+    const f = await ask("Generate Work Order from Complaint", [
+      { n: "category", l: "Maintenance Category", v: "Repair" },
+      { n: "assignee", l: "Assign Mechanic (Full Name)" }
+    ]);
+    if (!f) return;
+    const r = await post("/work-orders", { ...fj(f), complaint_id: d.id });
+    await done("Work order " + r.code + " created.");
+  };
+
+  ACT.newW = async () => {
+    const f = await ask("Create Standalone Work Order", [
+      { n: "asset_id", l: "Select Equipment / Vehicle", t: "select", o: await aOpts(), r: 1 },
+      { n: "category", l: "Work Category", v: "Routine Service" },
+      { n: "description", l: "Work Order Description (English)", t: "textarea", r: 1 },
+      { n: "priority", l: t("priority"), t: "select", o: ["Low", "Normal", "High", "Critical"].map(x => [x, x]), v: "Normal" },
+      { n: "assignee", l: "Assigned Mechanic / Lead" }
+    ], "description");
+    if (!f) return;
+    const r = await post("/work-orders", fj(f));
+    await done("Work order " + r.code + " created.");
+  };
+
+  ACT.woNext = async d => {
+    const f = await ask("Advance Work Order Status to: " + d.s, [
+      ...(d.s === "Assigned" ? [{ n: "assignee", l: "Assign Mechanic (Full Name)", r: 1 }] : []),
+      { n: "note", l: "Inspection Findings / Completion Note", t: "textarea" }
+    ], "note");
+    if (!f) return;
+    await post(`/work-orders/${d.id}/status`, { ...fj(f), status: d.s });
+    await done("Status updated.");
+  };
+
+  ACT.upWoDoc = async d => {
+    const f = await ask("Upload Work Order Attachment / Voice Note", [
+      { n: "kind", l: "Attachment Type", t: "select", o: ["Repair photograph", "Voice recording", "Inspection Sheet", "Job Card", "Other"].map(x => [x, x]) },
+      { n: "file", l: "Document / Image / Audio (PDF, JPG, PNG, WebM, WAV)", t: "file", r: 1 }
+    ]);
+    if (!f) return;
+    await post(`/work-orders/${d.id}/documents`, f);
+    await done("Work order attachment uploaded.");
+  };
+
+  ACT.newP = async () => {
+    const [supList, catList] = await Promise.all([api("/suppliers"), api("/categories?kind=part")]);
+    const f = await ask("Add Spare Part to Catalogue", [
+      { n: "name", l: "Part Name", r: 1 },
+      { n: "stock_id", l: "Stock ID (Leave blank to generate)" },
+      { n: "category", l: "Category", t: "select", o: catList.map(c => [c.name, c.name]) },
+      { n: "manufacturer", l: "Manufacturer" },
+      { n: "oem_no", l: "OEM Part Number" },
+      { n: "compat", l: "Compatible Makes / Models" },
+      { n: "unit", l: "Unit of Measure", v: "pcs" },
+      { n: "min_qty", l: "Minimum Level", t: "number", v: 1 },
+      { n: "unit_cost", l: "Unit Cost (KWD)", t: "number", v: 0 },
+      { n: "location", l: "Storage Location" },
+      { n: "supplier_id", l: "Preferred Supplier", t: "select", o: opts(supList, "id", s => s.name, "(None)") }
+    ]);
+    if (!f) return;
+    const r = await post("/parts", fj(f));
+    await done("Added part: " + r.stock_id);
+  };
+
+  ACT.stockIn = async d => {
+    const f = await ask("Stock In (Receive Inventory)", [
+      { n: "qty", l: "Quantity Received", t: "number", r: 1 },
+      { n: "unit_cost", l: "Unit Purchase Cost (KWD)", t: "number" },
+      { n: "note", l: "Delivery Note Ref" }
+    ]);
+    if (!f) return;
+    await post(`/parts/${d.id}/stock`, { ...fj(f), kind: "in" });
+    await done("Inventory updated.");
+  };
+
+  ACT.adjust = async d => {
+    const f = await ask("Reconcile Stock Count", [
+      { n: "qty", l: "Counted Quantity", t: "number", r: 1 },
+      { n: "note", l: "Reason (Required)", r: 1 }
+    ], "note");
+    if (!f) return;
+    await post(`/parts/${d.id}/stock`, { ...fj(f), kind: "adjust" });
+    await done("Stock adjusted.");
+  };
+
+  ACT.issue = async d => {
+    const f = await ask("Issue Spare Part to Work Order", [
+      { n: "wo_id", l: "Select Work Order", t: "select", o: await woOpts(), r: 1 },
+      { n: "qty", l: "Quantity", t: "number", r: 1 }
+    ]);
+    if (!f) return;
+    await post(`/parts/${d.id}/issue`, fj(f));
+    await done("Part issued to work order.");
+  };
+
+  ACT.ret = async d => {
+    const f = await ask("Return Part from Work Order", [
+      { n: "wo_id", l: "Select Work Order", t: "select", o: await woOpts(), r: 1 },
+      { n: "qty", l: "Quantity", t: "number", r: 1 }
+    ]);
+    if (!f) return;
+    await post(`/parts/${d.id}/return`, fj(f));
+    await done("Part returned to stock.");
+  };
+
+  ACT.phist = async d => {
+    const h = await api(`/parts/${d.id}/history`);
+    show("Stock Movement History", tbl([
+      ["at", "Timestamp"],
+      ["kind", "Action", r => chip(r.kind.toUpperCase())],
+      ["qty", "Qty"],
+      ["prev_qty", "Before"],
+      ["new_qty", "After"],
+      ["asset_code", "Asset"],
+      ["wo_code", "Work Order"],
+      ["by", "Handled By"]
+    ], h));
+  };
+
+  const CURR_OPTS = [
+    ["KWD", "KWD - Kuwaiti Dinar (Default Base)"],
+    ["USD", "USD - US Dollar"],
+    ["EUR", "EUR - Euro"],
+    ["GBP", "GBP - British Pound"],
+    ["AED", "AED - UAE Dirham"],
+    ["SAR", "SAR - Saudi Riyal"],
+    ["QAR", "QAR - Qatari Riyal"],
+    ["BHD", "BHD - Bahraini Dinar"],
+    ["OMR", "OMR - Omani Rial"],
+    ["INR", "INR - Indian Rupee"],
+    ["JPY", "JPY - Japanese Yen"],
+    ["CNY", "CNY - Chinese Yuan"]
+  ];
+
+  ACT.newU = async () => {
+    const [partsList, supList] = await Promise.all([api("/parts"), api("/suppliers")]);
+    const f = await ask("Request External Purchase", [
+      { n: "bill", l: "📄 Upload Quotation / Invoice / Bill (Optional - AI Auto-Fills Form)", t: "file" },
+      { n: "part_name", l: "Part Name / Description", r: 1 },
+      { n: "qty", l: "Quantity", t: "number", r: 1 },
+      { n: "part_id", l: "Catalogue Match", t: "select", o: opts(partsList, "id", p => `${p.stock_id} · ${p.name} (${p.qty} in stock)`, "(Not in catalogue)") },
+      { n: "wo_id", l: "Work Order", t: "select", o: await woOpts("(None, stock purchase)") },
+      { n: "to_stock", l: "Destination", t: "select", o: [["0", "Direct to Work Order"], ["1", "Add to Inventory"]] },
+      { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
+      { n: "est_price", l: "Estimated Unit Price", t: "number" },
+      { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
+      { n: "supplier_id", l: "Supplier", t: "select", o: opts(supList, "id", s => s.name, "(Other)") },
+      { n: "supplier", l: "Supplier / Outside Shop Name" }
+    ]);
+    if (!f) return;
+    const r = await post("/purchases", fj(f));
+    await done("Purchase request " + r.code + " submitted.");
+  };
+
+  ACT.pdec = async d => {
+    const act = d.d === "approve" ? "Approve" : "Reject";
+    if (!confirm(`${act} this external purchase request?`)) return;
+    await post(`/purchases/${d.id}/decide`, { decision: d.d });
+    await done(`Purchase request ${act.toLowerCase()}d.`);
+  };
+
+  ACT.prec = async d => {
+    const f = await ask("Record Actual Purchase & Upload Original Bill", [
+      { n: "bill", l: "Original Bill / Invoice / Receipt (PDF, JPG, JPEG, PNG, WEBP)", t: "file", r: 1 },
+      { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
+      { n: "unit_price", l: "Actual Unit Price", t: "number", r: 1 },
+      { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
+      { n: "invoice_no", l: "Invoice / Bill Number", r: 1 },
+      { n: "supplier", l: "Supplier Name" },
+      {
+        n: "doc_kind", l: "Document Type", t: "select", o: [
+          ["External Purchase Bill", "External Purchase Bill"],
+          ["Supplier Invoice", "Supplier Invoice"],
+          ["Purchase Receipt", "Purchase Receipt"],
+          ["Supporting Document", "Supporting Document"]
+        ], v: "External Purchase Bill"
+      }
+    ]);
+    if (!f) return;
+    await post(`/purchases/${d.id}/record`, f);
+    await done("Purchase recorded and bill saved.");
+  };
+
+  ACT.purDocs = async d => {
+    const purchaseId = d.id;
+    async function renderModal() {
+      let res = { documents: [], purchase: {} };
+      try {
+        res = await api(`/purchases/${purchaseId}/documents`);
+      } catch (e) {
+        alert("Failed to load documents: " + e.message);
+        return;
+      }
+      const docs = res.documents || [];
+      const p = res.purchase || {};
+
+      const dlg = document.createElement("dialog");
+      dlg.className = "dlg pur-doc-modal";
+      dlg.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <h3 class="d" style="margin:0">📎 Purchase Documents: ${esc(p.code || '')} - ${esc(p.part_name || '')}</h3>
         <button type="button" class="btn sm g" id="purCloseBtn">✕</button>
@@ -2594,107 +2605,107 @@ ACT.purDocs = async d => {
       </div>
     `;
 
-    document.body.append(dlg);
-    dlg.showModal();
+      document.body.append(dlg);
+      dlg.showModal();
 
-    dlg.querySelector("#purCloseBtn").onclick = () => {
-      dlg.close();
-      dlg.remove();
-      // Reload current view to update doc counter
-      if (typeof V.pur === "function") nav("pur");
-    };
+      dlg.querySelector("#purCloseBtn").onclick = () => {
+        dlg.close();
+        dlg.remove();
+        // Reload current view to update doc counter
+        if (typeof V.pur === "function") nav("pur");
+      };
 
-    // Delete document handler
-    dlg.querySelectorAll(".btn.sm.er").forEach(btn => {
-      btn.onclick = async () => {
-        const docId = btn.getAttribute("data-doc-id");
-        if (!confirm("Are you sure you want to delete this purchase document?")) return;
+      // Delete document handler
+      dlg.querySelectorAll(".btn.sm.er").forEach(btn => {
+        btn.onclick = async () => {
+          const docId = btn.getAttribute("data-doc-id");
+          if (!confirm("Are you sure you want to delete this purchase document?")) return;
+          try {
+            await api(`/purchases/${purchaseId}/documents/${docId}`, { method: "DELETE" });
+            dlg.close();
+            dlg.remove();
+            await renderModal();
+          } catch (e) {
+            alert("Error deleting document: " + e.message);
+          }
+        };
+      });
+
+      // Upload form handler
+      const form = dlg.querySelector("#purDocUploadForm");
+      const purFileInput = form.querySelector('input[type="file"]');
+      setupDocumentAutoFill(form, purFileInput, "purchase");
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const fileInput = form.querySelector('input[type="file"]');
+        if (!fileInput.files || !fileInput.files[0]) {
+          alert("Please select a file to upload.");
+          return;
+        }
+        const file = fileInput.files[0];
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext)) {
+          alert("Invalid file format. Allowed: PDF, JPG, JPEG, PNG, WEBP.");
+          return;
+        }
+        if (file.size > 25 * 1024 * 1024) {
+          alert("File size exceeds 25 MB limit.");
+          return;
+        }
+
+        const prog = dlg.querySelector("#purUploadProg");
+        const bar = dlg.querySelector("#purUploadBar");
+        const submitBtn = dlg.querySelector("#purSubmitBtn");
+
+        prog.style.display = "block";
+        bar.style.width = "40%";
+        submitBtn.disabled = true;
+
         try {
-          await api(`/purchases/${purchaseId}/documents/${docId}`, { method: "DELETE" });
-          dlg.close();
-          dlg.remove();
-          await renderModal();
-        } catch (e) {
-          alert("Error deleting document: " + e.message);
+          const fd = new FormData(form);
+          bar.style.width = "75%";
+          await post(`/purchases/${purchaseId}/documents`, fd);
+          bar.style.width = "100%";
+          setTimeout(async () => {
+            dlg.close();
+            dlg.remove();
+            await renderModal();
+          }, 300);
+        } catch (err) {
+          prog.style.display = "none";
+          submitBtn.disabled = false;
+          alert("Upload failed: " + err.message);
         }
       };
-    });
+    }
 
-    // Upload form handler
-    const form = dlg.querySelector("#purDocUploadForm");
-    const purFileInput = form.querySelector('input[type="file"]');
-    setupDocumentAutoFill(form, purFileInput, "purchase");
+    await renderModal();
+  };
 
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const fileInput = form.querySelector('input[type="file"]');
-      if (!fileInput.files || !fileInput.files[0]) {
-        alert("Please select a file to upload.");
-        return;
-      }
-      const file = fileInput.files[0];
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (!["pdf", "jpg", "jpeg", "png", "webp"].includes(ext)) {
-        alert("Invalid file format. Allowed: PDF, JPG, JPEG, PNG, WEBP.");
-        return;
-      }
-      if (file.size > 25 * 1024 * 1024) {
-        alert("File size exceeds 25 MB limit.");
-        return;
-      }
+  ACT.addSup = async () => {
+    const f = await ask("Add New Supplier / Vendor", [
+      { n: "name", l: "Supplier / Workshop Name", r: 1 },
+      { n: "country", l: "Country / Business Region", v: "Kuwait" },
+      { n: "civil_id_cr", l: "Commercial Registration (CR) / Civil ID No." },
+      { n: "paci_no", l: "PACI Building / Plot No (الرقم الآلي للعنوان)" },
+      { n: "contact_person", l: "Contact Person" },
+      { n: "phone", l: "Phone Number" },
+      { n: "email", l: "Email Address" },
+      { n: "address", l: "Address / Area in Kuwait" },
+      { n: "tax_no", l: "Tax / Commercial Reg No" },
+      { n: "categories", l: "Products / Categories Supplied" },
+      { n: "notes", l: "Remarks / Notes", t: "textarea" }
+    ], "notes");
+    if (!f) return;
+    const r = await post("/suppliers", fj(f));
+    await done("Supplier " + r.code + " registered.");
+  };
 
-      const prog = dlg.querySelector("#purUploadProg");
-      const bar = dlg.querySelector("#purUploadBar");
-      const submitBtn = dlg.querySelector("#purSubmitBtn");
-
-      prog.style.display = "block";
-      bar.style.width = "40%";
-      submitBtn.disabled = true;
-
-      try {
-        const fd = new FormData(form);
-        bar.style.width = "75%";
-        await post(`/purchases/${purchaseId}/documents`, fd);
-        bar.style.width = "100%";
-        setTimeout(async () => {
-          dlg.close();
-          dlg.remove();
-          await renderModal();
-        }, 300);
-      } catch (err) {
-        prog.style.display = "none";
-        submitBtn.disabled = false;
-        alert("Upload failed: " + err.message);
-      }
-    };
-  }
-
-  await renderModal();
-};
-
-ACT.addSup = async () => {
-  const f = await ask("Add New Supplier / Vendor", [
-    { n: "name", l: "Supplier / Workshop Name", r: 1 },
-    { n: "country", l: "Country / Business Region", v: "Kuwait" },
-    { n: "civil_id_cr", l: "Commercial Registration (CR) / Civil ID No." },
-    { n: "paci_no", l: "PACI Building / Plot No (الرقم الآلي للعنوان)" },
-    { n: "contact_person", l: "Contact Person" },
-    { n: "phone", l: "Phone Number" },
-    { n: "email", l: "Email Address" },
-    { n: "address", l: "Address / Area in Kuwait" },
-    { n: "tax_no", l: "Tax / Commercial Reg No" },
-    { n: "categories", l: "Products / Categories Supplied" },
-    { n: "notes", l: "Remarks / Notes", t: "textarea" }
-  ], "notes");
-  if (!f) return;
-  const r = await post("/suppliers", fj(f));
-  await done("Supplier " + r.code + " registered.");
-};
-
-ACT.viewSup = async d => {
-  const res = await api(`/suppliers/${d.id}`);
-  const s = res.supplier;
-  show(`Supplier Profile: ${s.name}`, `
+  ACT.viewSup = async d => {
+    const res = await api(`/suppliers/${d.id}`);
+    const s = res.supplier;
+    show(`Supplier Profile: ${s.name}`, `
     <div class="kv">
       <div><small>Code</small><b>${s.code}</b></div>
       <div><small>Country</small><span>${esc(s.country || "Kuwait")}</span></div>
@@ -2717,208 +2728,223 @@ ACT.viewSup = async d => {
       ["bill_id", "Bill", r => bill(r.bill_id)]
     ], res.purchases)}
   `);
-};
+  };
 
-ACT.editSup = async d => {
-  const res = await api(`/suppliers/${d.id}`);
-  const s = res.supplier;
-  const f = await ask("Edit Supplier Details", [
-    { n: "name", l: "Supplier Name", v: s.name, r: 1 },
-    { n: "country", l: "Country / Business Region", v: s.country || "Kuwait" },
-    { n: "civil_id_cr", l: "Commercial Registration (CR) / Civil ID No.", v: s.civil_id_cr },
-    { n: "paci_no", l: "PACI Building / Plot No", v: s.paci_no },
-    { n: "contact_person", l: "Contact Person", v: s.contact_person },
-    { n: "phone", l: "Phone", v: s.phone },
-    { n: "email", l: "Email", v: s.email },
-    { n: "address", l: "Address", v: s.address },
-    { n: "tax_no", l: "Tax No", v: s.tax_no },
-    { n: "categories", l: "Categories", v: s.categories },
-    { n: "notes", l: "Notes", t: "textarea", v: s.notes }
-  ], "notes");
-  if (!f) return;
-  await put(`/suppliers/${d.id}`, fj(f));
-  await done("Supplier updated.");
-};
+  ACT.editSup = async d => {
+    const res = await api(`/suppliers/${d.id}`);
+    const s = res.supplier;
+    const f = await ask("Edit Supplier Details", [
+      { n: "name", l: "Supplier Name", v: s.name, r: 1 },
+      { n: "country", l: "Country / Business Region", v: s.country || "Kuwait" },
+      { n: "civil_id_cr", l: "Commercial Registration (CR) / Civil ID No.", v: s.civil_id_cr },
+      { n: "paci_no", l: "PACI Building / Plot No", v: s.paci_no },
+      { n: "contact_person", l: "Contact Person", v: s.contact_person },
+      { n: "phone", l: "Phone", v: s.phone },
+      { n: "email", l: "Email", v: s.email },
+      { n: "address", l: "Address", v: s.address },
+      { n: "tax_no", l: "Tax No", v: s.tax_no },
+      { n: "categories", l: "Categories", v: s.categories },
+      { n: "notes", l: "Notes", t: "textarea", v: s.notes }
+    ], "notes");
+    if (!f) return;
+    await put(`/suppliers/${d.id}`, fj(f));
+    await done("Supplier updated.");
+  };
 
-ACT.toggleSup = async d => {
-  await post(`/suppliers/${d.id}/toggle`);
-  await done("Supplier status updated.");
-};
+  ACT.toggleSup = async d => {
+    await post(`/suppliers/${d.id}/toggle`);
+    await done("Supplier status updated.");
+  };
 
-ACT.newE = async () => {
-  const f = await ask("Record External Maintenance Expense", [
-    { n: "bill", l: "Invoice / Receipt (PDF, JPG, PNG, WEBP)", t: "file", r: 1 },
-    { n: "asset_id", l: "Equipment / Vehicle", t: "select", o: await aOpts(), r: 1 },
-    { n: "wo_id", l: "Work Order (Optional)", t: "select", o: await woOpts("(None)") },
-    { n: "kind", l: "Expense Type", t: "select", o: [
-      ["external_labour", "External Labour (Authorized outside mechanic)"],
-      ["outsourced_service", "Outsourced Specialist Service"],
-      ["towing", "Towing / Transport Expense"],
-      ["external_inspection", "External Inspection Fee"],
-      ["other_approved", "Other Approved Maintenance Expense"]
-    ] },
-    { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
-    { n: "amount", l: "Amount Paid", t: "number", r: 1 },
-    { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
-    { n: "note", l: "Payment Note / Work Done", r: 1 }
-  ]);
-  if (!f) return;
-  await post("/expenses", f);
-  await done("Expense recorded.");
-};
+  ACT.newE = async () => {
+    const f = await ask("Record External Maintenance Expense", [
+      { n: "bill", l: "Invoice / Receipt (PDF, JPG, PNG, WEBP)", t: "file", r: 1 },
+      { n: "asset_id", l: "Equipment / Vehicle", t: "select", o: await aOpts(), r: 1 },
+      { n: "wo_id", l: "Work Order (Optional)", t: "select", o: await woOpts("(None)") },
+      {
+        n: "kind", l: "Expense Type", t: "select", o: [
+          ["external_labour", "External Labour (Authorized outside mechanic)"],
+          ["outsourced_service", "Outsourced Specialist Service"],
+          ["towing", "Towing / Transport Expense"],
+          ["external_inspection", "External Inspection Fee"],
+          ["other_approved", "Other Approved Maintenance Expense"]
+        ]
+      },
+      { n: "currency", l: "Currency", t: "select", o: CURR_OPTS, v: "KWD" },
+      { n: "amount", l: "Amount Paid", t: "number", r: 1 },
+      { n: "exchange_rate", l: "Manual Exchange Rate to KWD (Optional; leave blank for automatic live rate)", t: "number" },
+      { n: "note", l: "Payment Note / Work Done", r: 1 }
+    ]);
+    if (!f) return;
+    await post("/expenses", f);
+    await done("Expense recorded.");
+  };
 
-ACT.addH = async () => {
-  const f = await ask("Digitize Historical Paper Record", [
-    { n: "document", l: "Scanned Paperwork / Bill (PDF, JPG, PNG, WEBP)", t: "file" },
-    { n: "asset_id", l: "Vehicle / Equipment", t: "select", o: await aOpts(), r: 1 },
-    { n: "record_type", l: "Record Type", t: "select", o: ["service", "repair", "complaint", "parts_replacement", "expense", "inspection", "job_card", "other"].map(x => [x, x.toUpperCase()]) },
-    { n: "record_date", l: "Historical Date", t: "date", r: 1 },
-    { n: "title", l: "Record Title", r: 1 },
-    { n: "description", l: "Description of Work", t: "textarea" },
-    { n: "work_order_ref", l: "Old Work Order / Job Card Ref" },
-    { n: "invoice_no", l: "Legacy Invoice No" },
-    { n: "supplier_vendor", l: "Workshop / Vendor" },
-    { n: "performed_by", l: "Technician" },
-    { n: "cost", l: "Historical Cost (KWD)", t: "number" },
-    { n: "verified", l: "Verification Status", t: "select", o: [["1", "Verified"], ["0", "Unverified / Incomplete"]] }
-  ]);
-  if (!f) return;
-  const r = await post("/historical", f);
-  await done("Historical paper record digitized: " + r.code);
-};
+  ACT.addH = async () => {
+    const f = await ask("Digitize Historical Paper Record", [
+      { n: "document", l: "Scanned Paperwork / Bill (PDF, JPG, PNG, WEBP)", t: "file" },
+      { n: "asset_id", l: "Vehicle / Equipment", t: "select", o: await aOpts(), r: 1 },
+      { n: "record_type", l: "Record Type", t: "select", o: ["service", "repair", "complaint", "parts_replacement", "expense", "inspection", "job_card", "other"].map(x => [x, x.toUpperCase()]) },
+      { n: "record_date", l: "Historical Date", t: "date", r: 1 },
+      { n: "title", l: "Record Title", r: 1 },
+      { n: "description", l: "Description of Work", t: "textarea" },
+      { n: "work_order_ref", l: "Old Work Order / Job Card Ref" },
+      { n: "invoice_no", l: "Legacy Invoice No" },
+      { n: "supplier_vendor", l: "Workshop / Vendor" },
+      { n: "performed_by", l: "Technician" },
+      { n: "cost", l: "Historical Cost (KWD)", t: "number" },
+      { n: "verified", l: "Verification Status", t: "select", o: [["1", "Verified"], ["0", "Unverified / Incomplete"]] }
+    ]);
+    if (!f) return;
+    const r = await post("/historical", f);
+    await done("Historical paper record digitized: " + r.code);
+  };
 
-ACT.impH = async () => {
-  const f = await ask("Bulk Import Historical Records (CSV)", [
-    { n: "file", l: "CSV File (UTF-8)", t: "file", r: 1 }
-  ]);
-  if (!f) return;
-  const r = await post("/historical/import", f);
-  await done(`Import complete: ${r.imported} digitized records.`);
-};
+  ACT.impH = async () => {
+    const f = await ask("Bulk Import Historical Records (CSV)", [
+      { n: "file", l: "CSV File (UTF-8)", t: "file", r: 1 }
+    ]);
+    if (!f) return;
+    const r = await post("/historical/import", f);
+    await done(`Import complete: ${r.imported} digitized records.`);
+  };
 
-ACT.addWs = async () => {
-  const f = await ask("Add Kuwait Worksite / Operational Yard", [
-    { n: "name", l: "Worksite / Location Name", r: 1 },
-    { n: "site_type", l: "Site Type", t: "select", o: [
-      ["Central Workshop / Yard", "Central Workshop / Yard"],
-      ["Project Site", "Project Site / Construction Location"],
-      ["Operational Base", "Operational Base / Depot"],
-      ["Client Site", "Client Site / Contract Assignment"]
-    ] },
-    { n: "governorate", l: "Kuwait Governorate", t: "select", o: [
-      ["Ahmadi", "Ahmadi / الأحمدي"],
-      ["Capital", "Capital / العاصمة"],
-      ["Farwaniya", "Farwaniya / الفروانية"],
-      ["Jahra", "Jahra / الجهراء"],
-      ["Hawalli", "Hawalli / حولي"],
-      ["Mubarak Al-Kabeer", "Mubarak Al-Kabeer / مبارك الكبير"]
-    ] },
-    { n: "area", l: "Area / Industrial Zone (e.g. Shuwaikh, Sulaibiya)" },
-    { n: "paci_no", l: "Kuwait PACI Number (الرقم الآلي للعنوان)" },
-    { n: "gps_lat", l: "GPS Latitude", t: "number" },
-    { n: "gps_lng", l: "GPS Longitude", t: "number" },
-    { n: "contact_person", l: "Site Supervisor / Contact Person" },
-    { n: "phone", l: "Site Contact Phone Number" }
-  ]);
-  if (!f) return;
-  await post("/worksites", fj(f));
-  await done("Worksite registered.");
-};
+  ACT.addWs = async () => {
+    const f = await ask("Add Kuwait Worksite / Operational Yard", [
+      { n: "name", l: "Worksite / Location Name", r: 1 },
+      {
+        n: "site_type", l: "Site Type", t: "select", o: [
+          ["Central Workshop / Yard", "Central Workshop / Yard"],
+          ["Project Site", "Project Site / Construction Location"],
+          ["Operational Base", "Operational Base / Depot"],
+          ["Client Site", "Client Site / Contract Assignment"]
+        ]
+      },
+      {
+        n: "governorate", l: "Kuwait Governorate", t: "select", o: [
+          ["Ahmadi", "Ahmadi / الأحمدي"],
+          ["Capital", "Capital / العاصمة"],
+          ["Farwaniya", "Farwaniya / الفروانية"],
+          ["Jahra", "Jahra / الجهراء"],
+          ["Hawalli", "Hawalli / حولي"],
+          ["Mubarak Al-Kabeer", "Mubarak Al-Kabeer / مبارك الكبير"]
+        ]
+      },
+      { n: "area", l: "Area / Industrial Zone (e.g. Shuwaikh, Sulaibiya)" },
+      { n: "paci_no", l: "Kuwait PACI Number (الرقم الآلي للعنوان)" },
+      { n: "gps_lat", l: "GPS Latitude", t: "number" },
+      { n: "gps_lng", l: "GPS Longitude", t: "number" },
+      { n: "contact_person", l: "Site Supervisor / Contact Person" },
+      { n: "phone", l: "Site Contact Phone Number" }
+    ]);
+    if (!f) return;
+    await post("/worksites", fj(f));
+    await done("Worksite registered.");
+  };
 
-ACT.editWs = async d => {
-  const s = await api(`/worksites/${d.id}`);
-  const f = await ask("Edit Kuwait Worksite", [
-    { n: "name", l: "Worksite / Location Name", v: s.name, r: 1 },
-    { n: "site_type", l: "Site Type", t: "select", o: [
-      ["Central Workshop / Yard", "Central Workshop / Yard"],
-      ["Project Site", "Project Site / Construction Location"],
-      ["Operational Base", "Operational Base / Depot"],
-      ["Client Site", "Client Site / Contract Assignment"]
-    ], v: s.site_type },
-    { n: "governorate", l: "Kuwait Governorate", t: "select", o: [
-      ["Ahmadi", "Ahmadi / الأحمدي"],
-      ["Capital", "Capital / العاصمة"],
-      ["Farwaniya", "Farwaniya / الفروانية"],
-      ["Jahra", "Jahra / الجهراء"],
-      ["Hawalli", "Hawalli / حولي"],
-      ["Mubarak Al-Kabeer", "Mubarak Al-Kabeer / مبارك الكبير"]
-    ], v: s.governorate },
-    { n: "area", l: "Area / Industrial Zone", v: s.area },
-    { n: "paci_no", l: "Kuwait PACI Number (الرقم الآلي للعنوان)", v: s.paci_no },
-    { n: "gps_lat", l: "GPS Latitude", t: "number", v: s.gps_lat },
-    { n: "gps_lng", l: "GPS Longitude", t: "number", v: s.gps_lng },
-    { n: "contact_person", l: "Site Supervisor / Contact Person", v: s.contact_person },
-    { n: "phone", l: "Site Contact Phone Number", v: s.phone },
-    { n: "active", l: "Status", t: "select", o: [["1", "Active"], ["0", "Inactive"]], v: s.active }
-  ]);
-  if (!f) return;
-  await put(`/worksites/${d.id}`, fj(f));
-  await done("Worksite updated.");
-};
+  ACT.editWs = async d => {
+    const s = await api(`/worksites/${d.id}`);
+    const f = await ask("Edit Kuwait Worksite", [
+      { n: "name", l: "Worksite / Location Name", v: s.name, r: 1 },
+      {
+        n: "site_type", l: "Site Type", t: "select", o: [
+          ["Central Workshop / Yard", "Central Workshop / Yard"],
+          ["Project Site", "Project Site / Construction Location"],
+          ["Operational Base", "Operational Base / Depot"],
+          ["Client Site", "Client Site / Contract Assignment"]
+        ], v: s.site_type
+      },
+      {
+        n: "governorate", l: "Kuwait Governorate", t: "select", o: [
+          ["Ahmadi", "Ahmadi / الأحمدي"],
+          ["Capital", "Capital / العاصمة"],
+          ["Farwaniya", "Farwaniya / الفروانية"],
+          ["Jahra", "Jahra / الجهراء"],
+          ["Hawalli", "Hawalli / حولي"],
+          ["Mubarak Al-Kabeer", "Mubarak Al-Kabeer / مبارك الكبير"]
+        ], v: s.governorate
+      },
+      { n: "area", l: "Area / Industrial Zone", v: s.area },
+      { n: "paci_no", l: "Kuwait PACI Number (الرقم الآلي للعنوان)", v: s.paci_no },
+      { n: "gps_lat", l: "GPS Latitude", t: "number", v: s.gps_lat },
+      { n: "gps_lng", l: "GPS Longitude", t: "number", v: s.gps_lng },
+      { n: "contact_person", l: "Site Supervisor / Contact Person", v: s.contact_person },
+      { n: "phone", l: "Site Contact Phone Number", v: s.phone },
+      { n: "active", l: "Status", t: "select", o: [["1", "Active"], ["0", "Inactive"]], v: s.active }
+    ]);
+    if (!f) return;
+    await put(`/worksites/${d.id}`, fj(f));
+    await done("Worksite updated.");
+  };
 
-ACT.addU = async () => {
-  const f = await ask("Create User Account", [
-    { n: "username", l: "Username", r: 1 },
-    { n: "name", l: "Full Name", r: 1 },
-    { n: "role", l: "Role", t: "select", o: [
-      ["super_admin", "Super Admin"],
-      ["company_admin", "Company Admin"],
-      ["transport", "Transport Department"],
-      ["mechanical", "Mechanical Section"],
-      ["workshop", "Workshop Lead"],
-      ["mechanic", "Mechanic / Technician"],
-      ["inventory", "Inventory / Spare Parts"],
-      ["procurement", "Procurement"],
-      ["driver", "Driver / Operator"],
-      ["management", "Management / Executive"]
-    ], r: 1 },
-    { n: "preferred_lang", l: "Preferred Language", t: "select", o: [["en", "English"], ["hi", "Hindi (हिन्दी)"], ["ar", "Arabic (العربية)"]], v: "en" },
-    { n: "password", l: "Password (8+ characters)", t: "password", r: 1 }
-  ]);
-  if (!f) return;
-  await post("/users", fj(f));
-  await done("User account created.");
-};
+  ACT.addU = async () => {
+    const f = await ask("Create User Account", [
+      { n: "username", l: "Username", r: 1 },
+      { n: "name", l: "Full Name", r: 1 },
+      {
+        n: "role", l: "Role", t: "select", o: [
+          ["super_admin", "Super Admin"],
+          ["company_admin", "Company Admin"],
+          ["transport", "Transport Department"],
+          ["mechanical", "Mechanical Section"],
+          ["workshop", "Workshop Lead"],
+          ["mechanic", "Mechanic / Technician"],
+          ["inventory", "Inventory / Spare Parts"],
+          ["procurement", "Procurement"],
+          ["driver", "Driver / Operator"],
+          ["management", "Management / Executive"]
+        ], r: 1
+      },
+      { n: "preferred_lang", l: "Preferred Language", t: "select", o: [["en", "English"], ["hi", "Hindi (हिन्दी)"], ["ar", "Arabic (العربية)"]], v: "en" },
+      { n: "password", l: "Password (8+ characters)", t: "password", r: 1 }
+    ]);
+    if (!f) return;
+    await post("/users", fj(f));
+    await done("User account created.");
+  };
 
-ACT.editUser = async d => {
-  const uList = await api("/users");
-  const u = uList.find(x => x.id === Number(d.id));
-  if (!u) return;
-  const f = await ask(`Edit User: ${u.username}`, [
-    { n: "name", l: "Full Name", v: u.name, r: 1 },
-    { n: "role", l: "Role", t: "select", o: [
-      ["super_admin", "Super Admin"],
-      ["company_admin", "Company Admin"],
-      ["transport", "Transport Department"],
-      ["mechanical", "Mechanical Section"],
-      ["workshop", "Workshop Lead"],
-      ["mechanic", "Mechanic / Technician"],
-      ["inventory", "Inventory / Spare Parts"],
-      ["procurement", "Procurement"],
-      ["driver", "Driver / Operator"],
-      ["management", "Management / Executive"]
-    ], v: u.role },
-    { n: "preferred_lang", l: "Preferred Language", t: "select", o: [["en", "English"], ["hi", "Hindi (हिन्दी)"], ["ar", "Arabic (العربية)"]], v: u.preferred_lang || "en" },
-    { n: "password", l: "New Password (Leave blank to keep existing)", t: "password" }
-  ]);
-  if (!f) return;
-  await put(`/users/${d.id}`, fj(f));
-  await done("User updated.");
-};
+  ACT.editUser = async d => {
+    const uList = await api("/users");
+    const u = uList.find(x => x.id === Number(d.id));
+    if (!u) return;
+    const f = await ask(`Edit User: ${u.username}`, [
+      { n: "name", l: "Full Name", v: u.name, r: 1 },
+      {
+        n: "role", l: "Role", t: "select", o: [
+          ["super_admin", "Super Admin"],
+          ["company_admin", "Company Admin"],
+          ["transport", "Transport Department"],
+          ["mechanical", "Mechanical Section"],
+          ["workshop", "Workshop Lead"],
+          ["mechanic", "Mechanic / Technician"],
+          ["inventory", "Inventory / Spare Parts"],
+          ["procurement", "Procurement"],
+          ["driver", "Driver / Operator"],
+          ["management", "Management / Executive"]
+        ], v: u.role
+      },
+      { n: "preferred_lang", l: "Preferred Language", t: "select", o: [["en", "English"], ["hi", "Hindi (हिन्दी)"], ["ar", "Arabic (العربية)"]], v: u.preferred_lang || "en" },
+      { n: "password", l: "New Password (Leave blank to keep existing)", t: "password" }
+    ]);
+    if (!f) return;
+    await put(`/users/${d.id}`, fj(f));
+    await done("User updated.");
+  };
 
-ACT.toggleUser = async d => {
-  await post(`/users/${d.id}/toggle`);
-  await done("User status updated.");
-};
+  ACT.toggleUser = async d => {
+    await post(`/users/${d.id}/toggle`);
+    await done("User status updated.");
+  };
 
-ACT.bk = async () => {
-  const r = await post("/admin/backup");
-  await done("Backup created: " + r.file);
-};
+  ACT.bk = async () => {
+    const r = await post("/admin/backup");
+    await done("Backup created: " + r.file);
+    go("admin");
+  };
 
-ACT.viewRates = async () => {
-  const r = await api("/currency/rates");
-  show("Kuwait Dinar (KWD) Base Exchange Rates", `
+  ACT.viewRates = async () => {
+    const r = await api("/currency/rates");
+    show("Kuwait Dinar (KWD) Base Exchange Rates", `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
       <small class="mu">Provider: ${esc(r.provider)} · Base Currency: <b>${esc(r.base)}</b></small>
       <button class="btn sm" data-a="syncRates">🔄 Sync Live Rates</button>
@@ -2931,37 +2957,38 @@ ACT.viewRates = async () => {
       ["updated_at", "Last Updated"]
     ], r.rates, row => B("editRate", row.currency, "Edit Manual Rate"))}
   `);
-};
+  };
 
-ACT.syncRates = async () => {
-  const res = await post("/currency/sync");
-  await done(`Synced ${res.updated_count} currency rates from live provider.`);
-  ACT.viewRates();
-};
+  ACT.syncRates = async () => {
+    const res = await post("/currency/sync");
+    await done(`Synced ${res.updated_count} currency rates from live provider.`);
+    ACT.viewRates();
+  };
 
-ACT.editRate = async d => {
-  const f = await ask(`Set Manual Rate for ${d.id} against KWD`, [
-    { n: "rate_from_kwd", l: `Units per 1 KWD (e.g. 1 KWD = X ${d.id})`, t: "number", r: 1 }
-  ]);
-  if (!f) return;
-  const val = Number(f.get("rate_from_kwd"));
-  if (!val || val <= 0) return alert("Invalid rate");
-  await post("/currency/rates", { currency: d.id, rate_from_kwd: val, rate_to_kwd: 1.0 / val });
-  await done("Manual exchange rate saved.");
-  ACT.viewRates();
-};
+  ACT.editRate = async d => {
+    const f = await ask(`Set Manual Rate for ${d.id} against KWD`, [
+      { n: "rate_from_kwd", l: `Units per 1 KWD (e.g. 1 KWD = X ${d.id})`, t: "number", r: 1 }
+    ]);
+    if (!f) return;
+    const val = Number(f.get("rate_from_kwd"));
+    if (!val || val <= 0) return alert("Invalid rate");
+    await post("/currency/rates", { currency: d.id, rate_from_kwd: val, rate_to_kwd: 1.0 / val });
+    await done("Manual exchange rate saved.");
+    ACT.viewRates();
+  };
 
-ACT.notifAll = async () => {
-  await post("/notifications/read-all");
-  await done("All notifications marked read.");
-};
+  ACT.notifAll = async () => {
+    await post("/notifications/read-all");
+    await done("All notifications marked read.");
+    refresh();
+  };
 
-// ---------------- APP SHELL & BOOT ----------------
-function shell() {
-  const userInitials = (ME.name || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
-  const userRoleFormatted = (ME.role || "").replace(/_/g, " ");
+  // ---------------- APP SHELL & BOOT ----------------
+  function shell() {
+    const userInitials = (ME.name || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+    const userRoleFormatted = (ME.role || "").replace(/_/g, " ");
 
-  R.innerHTML = `
+    R.innerHTML = `
     <!-- A. DESKTOP HEADER (>= 1024px) -->
     <header class="top desktop-header noprint">
       <div style="display:flex;align-items:center;gap:.65rem">
@@ -3184,93 +3211,93 @@ function shell() {
     </nav>
   `;
 
-  // Desktop search form submission
-  const g = $("#gs");
-  if (g) g.onsubmit = e => {
-    e.preventDefault();
-    go("search", $("#q").value);
-  };
-
-  // Mobile search form submission
-  const mg = $("#mobileSearchForm");
-  if (mg) mg.onsubmit = e => {
-    e.preventDefault();
-    const val = $("#mobileQueryInput")?.value || "";
-    toggleMobileSearch(false);
-    go("search", val);
-  };
-
-  // Language selectors
-  const handleLang = async lang => {
-    CUR_LANG = lang;
-    localStorage.setItem("fleethub_lang", CUR_LANG);
-    applyLanguageLayout();
-    await post("/user/lang", { lang: CUR_LANG }).catch(() => {});
-    shell();
-    refresh();
-  };
-
-  const ls = $("#langSel");
-  if (ls) ls.onchange = () => handleLang(ls.value);
-
-  const dls = $("#drawerLangSel");
-  if (dls) dls.onchange = () => handleLang(dls.value);
-
-  // Close drawer when clicking backdrop
-  const overlay = $("#drawerOverlay");
-  if (overlay) {
-    overlay.onclick = e => {
-      if (e.target === overlay || e.target.closest("[data-close-drawer]")) {
-        toggleMobileDrawer(false);
-      }
+    // Desktop search form submission
+    const g = $("#gs");
+    if (g) g.onsubmit = e => {
+      e.preventDefault();
+      go("search", $("#q").value);
     };
-  }
-}
 
-R.onclick = e => {
-  // Check viewmode switcher (Cards vs Table)
-  const vm = e.target.closest("[data-viewmode]");
-  if (vm) {
-    const mode = vm.dataset.viewmode;
-    CURRENT_TABLE_VIEW_MODE = mode;
-    localStorage.setItem("fleethub_table_view_mode", mode);
-    const container = $(`#${vm.dataset.target}`);
-    if (container) {
-      container.querySelectorAll(".view-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.viewmode === mode));
-      const wrapper = container.querySelector(".responsive-view-wrapper");
-      if (wrapper) wrapper.className = `responsive-view-wrapper ${mode}`;
+    // Mobile search form submission
+    const mg = $("#mobileSearchForm");
+    if (mg) mg.onsubmit = e => {
+      e.preventDefault();
+      const val = $("#mobileQueryInput")?.value || "";
+      toggleMobileSearch(false);
+      go("search", val);
+    };
+
+    // Language selectors
+    const handleLang = async lang => {
+      CUR_LANG = lang;
+      localStorage.setItem("fleethub_lang", CUR_LANG);
+      applyLanguageLayout();
+      await post("/user/lang", { lang: CUR_LANG }).catch(() => { });
+      shell();
+      refresh();
+    };
+
+    const ls = $("#langSel");
+    if (ls) ls.onchange = () => handleLang(ls.value);
+
+    const dls = $("#drawerLangSel");
+    if (dls) dls.onchange = () => handleLang(dls.value);
+
+    // Close drawer when clicking backdrop
+    const overlay = $("#drawerOverlay");
+    if (overlay) {
+      overlay.onclick = e => {
+        if (e.target === overlay || e.target.closest("[data-close-drawer]")) {
+          toggleMobileDrawer(false);
+        }
+      };
     }
-    return;
   }
 
-  // Check card details expand toggle
-  const tog = e.target.closest("[data-toggle]");
-  if (tog) {
-    const targetId = tog.dataset.toggle;
-    const drawer = $(`#${targetId}`);
-    if (drawer) {
-      const isHidden = drawer.classList.toggle("hidden");
-      const span = tog.querySelector("span");
-      if (span) {
-        span.textContent = isHidden ? (t("more_details") || "More Details ▾") : (t("hide_details") || "Hide Details ▴");
+  R.onclick = e => {
+    // Check viewmode switcher (Cards vs Table)
+    const vm = e.target.closest("[data-viewmode]");
+    if (vm) {
+      const mode = vm.dataset.viewmode;
+      CURRENT_TABLE_VIEW_MODE = mode;
+      localStorage.setItem("fleethub_table_view_mode", mode);
+      const container = $(`#${vm.dataset.target}`);
+      if (container) {
+        container.querySelectorAll(".view-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.viewmode === mode));
+        const wrapper = container.querySelector(".responsive-view-wrapper");
+        if (wrapper) wrapper.className = `responsive-view-wrapper ${mode}`;
       }
+      return;
     }
-    return;
-  }
 
-  // Check drawer close
-  if (e.target.closest("[data-close-drawer]")) {
-    toggleMobileDrawer(false);
-    return;
-  }
+    // Check card details expand toggle
+    const tog = e.target.closest("[data-toggle]");
+    if (tog) {
+      const targetId = tog.dataset.toggle;
+      const drawer = $(`#${targetId}`);
+      if (drawer) {
+        const isHidden = drawer.classList.toggle("hidden");
+        const span = tog.querySelector("span");
+        if (span) {
+          span.textContent = isHidden ? (t("more_details") || "More Details ▾") : (t("hide_details") || "Hide Details ▴");
+        }
+      }
+      return;
+    }
 
-  // Standard data-a actions
-  const b = e.target.closest("[data-a]");
-  if (b && ACT[b.dataset.a]) run(() => ACT[b.dataset.a](b.dataset));
-};
+    // Check drawer close
+    if (e.target.closest("[data-close-drawer]")) {
+      toggleMobileDrawer(false);
+      return;
+    }
 
-function loginView() {
-  R.innerHTML = `
+    // Standard data-a actions
+    const b = e.target.closest("[data-a]");
+    if (b && ACT[b.dataset.a]) run(() => ACT[b.dataset.a](b.dataset));
+  };
+
+  function loginView() {
+    R.innerHTML = `
     <div class="login-wrap">
       <form class="login card" id="lf">
         <div style="display:flex;flex-direction:column;align-items:center;gap:.6rem;margin-bottom:1.5rem;text-align:center">
@@ -3296,92 +3323,92 @@ function loginView() {
     </div>
   `;
 
-  const lls = $("#loginLangSel");
-  if (lls) {
-    lls.onchange = () => {
-      CUR_LANG = lls.value;
-      localStorage.setItem("fleethub_lang", CUR_LANG);
-      applyLanguageLayout();
-      loginView();
+    const lls = $("#loginLangSel");
+    if (lls) {
+      lls.onchange = () => {
+        CUR_LANG = lls.value;
+        localStorage.setItem("fleethub_lang", CUR_LANG);
+        applyLanguageLayout();
+        loginView();
+      };
+    }
+
+    $("#lf").onsubmit = async e => {
+      e.preventDefault();
+      try {
+        ME = await post("/login", fj(new FormData(e.target)));
+        if (ME.token) {
+          localStorage.setItem("fleethub_token", ME.token);
+        }
+        if (ME.lang) {
+          CUR_LANG = ME.lang;
+          localStorage.setItem("fleethub_lang", CUR_LANG);
+          applyLanguageLayout();
+        }
+        shell();
+        HIST = [];
+        go(can("asset.view") ? "dash" : "comp");
+      } catch (x) {
+        $("#le").textContent = x.message;
+      }
     };
   }
 
-  $("#lf").onsubmit = async e => {
-    e.preventDefault();
+  async function boot() {
     try {
-      ME = await post("/login", fj(new FormData(e.target)));
-      if (ME.token) {
-        localStorage.setItem("fleethub_token", ME.token);
-      }
-      if (ME.lang) {
+      ME = await api("/me");
+      if (ME && ME.lang) {
         CUR_LANG = ME.lang;
         localStorage.setItem("fleethub_lang", CUR_LANG);
         applyLanguageLayout();
       }
+    } catch (e) {
+      ME = null;
+    }
+    if (ME) {
+      window.ME = ME;
       shell();
       HIST = [];
       go(can("asset.view") ? "dash" : "comp");
-    } catch (x) {
-      $("#le").textContent = x.message;
-    }
-  };
-}
-
-async function boot() {
-  try {
-    ME = await api("/me");
-    if (ME && ME.lang) {
-      CUR_LANG = ME.lang;
-      localStorage.setItem("fleethub_lang", CUR_LANG);
-      applyLanguageLayout();
-    }
-  } catch (e) {
-    ME = null;
-  }
-  if (ME) {
-    window.ME = ME;
-    shell();
-    HIST = [];
-    go(can("asset.view") ? "dash" : "comp");
-  } else {
-    window.ME = null;
-    loginView();
-  }
-}
-
-// Expose core navigation on window for seamless testability and console access
-window.go = go;
-window.shell = shell;
-window.ACT = ACT;
-window.boot = boot;
-window.getME = () => ME;
-
-boot();
-
-// Cross-tab and cross-browser live synchronization
-if (SYNC_BUS) {
-  SYNC_BUS.onmessage = () => {
-    if (ME) refresh();
-  };
-}
-
-let lastConsoleSyncVersion = null;
-async function pollSyncVersion() {
-  if (!ME || document.visibilityState === "hidden") return;
-  try {
-    const res = await api("/sync/version");
-    if (lastConsoleSyncVersion !== null && res.version !== lastConsoleSyncVersion) {
-      lastConsoleSyncVersion = res.version;
-      refresh();
     } else {
-      lastConsoleSyncVersion = res.version;
+      window.ME = null;
+      loginView();
     }
-  } catch (_) {}
-}
+  }
 
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") pollSyncVersion();
-});
+  // Expose core navigation on window for seamless testability and console access
+  window.go = go;
+  window.shell = shell;
+  window.ACT = ACT;
+  window.boot = boot;
+  window.getME = () => ME;
 
-setInterval(pollSyncVersion, 8000);
+  boot();
+
+  // Cross-tab and cross-browser live synchronization
+  if (SYNC_BUS) {
+    SYNC_BUS.onmessage = () => {
+      if (ME) refresh();
+    };
+  }
+
+  let lastConsoleSyncVersion = null;
+  async function pollSyncVersion() {
+    if (!ME || document.visibilityState === "hidden") return;
+    try {
+      const res = await api("/sync/version");
+      if (lastConsoleSyncVersion !== null && res.version !== lastConsoleSyncVersion) {
+        lastConsoleSyncVersion = res.version;
+        refresh();
+      } else {
+        lastConsoleSyncVersion = res.version;
+      }
+    } catch (_) { }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pollSyncVersion();
+  });
+
+  setInterval(pollSyncVersion, 8000);
 })();

@@ -112,6 +112,7 @@ def timeline(aid, costs):
     return a, sorted(ev, key=lambda e: str(e["at"] or ""))
 
 @asset_bp.post("/api/assets/<int:i>/transfer")
+@asset_bp.post("/assets/<int:i>/transfer")
 @need("asset.edit")
 def asset_transfer(i):
     p = P()
@@ -140,6 +141,7 @@ def asset_transfer(i):
     return jsonify(ok=1, from_site=from_name, to_site=to_name)
 
 @asset_bp.post("/api/assets")
+@asset_bp.post("/assets")
 @need("asset.edit")
 def asset_new():
     p = P()
@@ -155,6 +157,7 @@ def asset_new():
     return jsonify(id=cur.lastrowid, code=code)
 
 @asset_bp.put("/api/assets/<int:i>")
+@asset_bp.put("/assets/<int:i>")
 @need("asset.edit")
 def asset_edit(i):
     p = P()
@@ -176,6 +179,7 @@ def asset_edit(i):
     return jsonify(ok=1)
 
 @asset_bp.post("/api/assets/<int:i>/archive")
+@asset_bp.post("/assets/<int:i>/archive")
 @need("asset.edit")
 def asset_arch(i):
     with tx() as c:
@@ -187,6 +191,7 @@ def asset_arch(i):
     return jsonify(ok=1)
 
 @asset_bp.get("/api/assets")
+@asset_bp.get("/assets")
 @need("asset.view")
 def assets():
     sql = "SELECT a.*, w.name worksite FROM assets a LEFT JOIN worksites w ON w.id=a.worksite_id WHERE 1=1"
@@ -204,11 +209,13 @@ def assets():
     return jsonify(rows(sql, args))
 
 @asset_bp.get("/api/my-assets")
+@asset_bp.get("/my-assets")
 @need(None)
 def my_assets():
     return jsonify(rows("SELECT id,code,name,reg_no,serial_no FROM assets WHERE lower(operator)=lower(?) AND archived=0", (session["name"],)))
 
 @asset_bp.get("/api/search")
+@asset_bp.get("/search")
 @need("asset.view")
 def search():
     q = (request.args.get("q") or "").strip()
@@ -217,6 +224,7 @@ def search():
     return jsonify(rows(f"SELECT a.id,a.code,a.name,a.category,a.equipment_type,a.manufacturer,a.model,a.reg_no,a.serial_no,a.operator,a.status,a.archived,w.name worksite FROM assets a LEFT JOIN worksites w ON w.id=a.worksite_id WHERE {w} ORDER BY a.archived,a.code LIMIT 100", [f"%{q}%"] * len(SF)))
 
 @asset_bp.get("/api/assets/<int:i>/history")
+@asset_bp.get("/assets/<int:i>/history")
 @need("asset.view")
 def history(i):
     if not one("SELECT 1 x FROM assets WHERE id=?", (i,)): raise Bad("Asset not found", 404)

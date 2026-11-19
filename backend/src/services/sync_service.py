@@ -111,7 +111,7 @@ def compute_public_stats(db_conn):
         LIMIT 4
     """)
     priority_wo = [
-        {"id": r[0], "code": r[1], "asset_code": r[2], "asset_name": r[3], "desc": r[4], "priority": r[5], "status": r[6]}
+        {"id": r[0], "code": r[1], "asset_code": r[2], "asset_name": r[3], "desc": r[4], "description": r[4], "priority": r[5], "status": r[6]}
         for r in cur.fetchall()
     ]
 

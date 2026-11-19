@@ -32,6 +32,7 @@ def validate_purchase_file(file_obj):
     return ext
 
 @purchase_bp.post("/api/purchases")
+@purchase_bp.post("/purchases")
 @need("purchase.create")
 def pur_new():
     p = P()
@@ -89,6 +90,7 @@ def pur_new():
     return jsonify(id=cur.lastrowid, code=code)
 
 @purchase_bp.get("/api/purchases")
+@purchase_bp.get("/purchases")
 @need(None)
 def pur_list():
     if not (can("purchase.create") or can("purchase.approve") or can("purchase.record")):

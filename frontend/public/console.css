@@ -498,12 +498,15 @@
     --app-header-h: 46px;
     --bottom-nav-h: 0px;
   }
+
   .mobile-bottom-nav {
     display: none !important;
   }
+
   .wrap {
     padding-bottom: 1.5rem !important;
   }
+
   .mobile-header {
     height: var(--app-header-h) !important;
   }
@@ -1054,9 +1057,10 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: clamp(.625rem, 1.8vw, 1rem);
 }
-    min-height: 48px;
-    font-size: .95rem;
-  }
+
+min-height: 48px;
+font-size: .95rem;
+}
 }
 
 .dlg-close-btn {

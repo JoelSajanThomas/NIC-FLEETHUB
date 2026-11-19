@@ -36,8 +36,8 @@ const server = http.createServer((req, res) => {
   const reqUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const pathname = reqUrl.pathname;
 
-  // 1. Proxy /api/* requests to backend
-  if (pathname.startsWith("/api/")) {
+  // 1. Proxy /api/*, /files/*, and /uploads/* requests to backend
+  if (pathname.startsWith("/api/") || pathname.startsWith("/files/") || pathname.startsWith("/uploads/")) {
     const proxyOptions = {
       hostname: BACKEND_HOST,
       port: BACKEND_PORT,
