@@ -93,6 +93,7 @@ def create_app():
         return jsonify(name=config.APP_NAME, status="Backend operational", port=config.PORT)
 
     @app.get("/app")
+    @app.get("/app/")
     def serve_app_console():
         if os.path.exists(os.path.join(frontend_dir, "app.html")):
             return send_from_directory(frontend_dir, "app.html")

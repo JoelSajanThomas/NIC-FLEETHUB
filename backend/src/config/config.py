@@ -49,7 +49,9 @@ SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
 SESSION_COOKIE_SECURE = True if (IS_PROD_DEPLOY or os.environ.get("COOKIE_SECURE", "0") == "1") else False
 PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
-# Regional defaults
+# Regional and company defaults
+APP_NAME = "NIC FleetHub"
+COMPANY_NAME = "National Industries Company (K.S.C.C)"
 DEFAULT_COUNTRY = "Kuwait"
 DEFAULT_CURRENCY = "KWD"
 DEFAULT_LANGUAGE = "en"

@@ -29,19 +29,25 @@ def close_db(e=None):
 
 @contextmanager
 def tx():
-    """Transaction context manager that commits and triggers sync broadcast."""
+    """Transaction context manager supporting nested transactions with ACID rollback integrity."""
     c = get_db()
+    depth = getattr(g, "_tx_depth", 0)
+    g._tx_depth = depth + 1
     try:
         yield c.cursor()
-        c.commit()
-        try:
-            from ..services.sync_service import notify_sync
-            notify_sync("db_commit")
-        except Exception:
-            pass
+        if depth == 0:
+            c.commit()
+            try:
+                from ..services.sync_service import notify_sync
+                notify_sync("db_commit")
+            except Exception:
+                pass
     except Exception:
-        c.rollback()
+        if depth == 0:
+            c.rollback()
         raise
+    finally:
+        g._tx_depth = depth
 
 def one(sql, args=()):
     """Fetch single row as dictionary or None."""
