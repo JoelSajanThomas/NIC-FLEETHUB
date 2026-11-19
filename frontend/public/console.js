@@ -133,13 +133,7 @@ const I18N = {
     paci_no: "Kuwait PACI Number",
     civil_id: "Civil ID",
     transfer_asset: "Transfer Worksite",
-    curr_kwd: "Kuwaiti Dinar (KWD)",
-    demo_mgmt: "Demo Data Management",
-    demo_load: "Load Demo Data",
-    demo_view: "View Demo Data",
-    demo_clear: "CLEAR ALL DEMO DATA",
-    demo_active: "Demo Data Loaded",
-    demo_none: "No Demo Data Loaded"
+    curr_kwd: "Kuwaiti Dinar (KWD)"
   },
   hi: {
     app_title: "एनआईसी फ्लीटहब",
@@ -251,13 +245,7 @@ const I18N = {
     paci_no: "कुवैत पाकी (PACI) नंबर",
     civil_id: "सिविल आईडी",
     transfer_asset: "कार्यस्थल स्थानांतरण",
-    curr_kwd: "कुवैती दिनार (KWD)",
-    demo_mgmt: "डेमो डेटा प्रबंधन",
-    demo_load: "डेमो डेटा लोड करें",
-    demo_view: "डेमो डेटा देखें",
-    demo_clear: "सभी डेमो डेटा हटाएं",
-    demo_active: "डेमो डेटा सक्रिय",
-    demo_none: "कोई डेमो डेटा नहीं है"
+    curr_kwd: "कुवैती दिनार (KWD)"
   },
   ar: {
     app_title: "إن آي سي فليت هب",
@@ -369,13 +357,7 @@ const I18N = {
     paci_no: "الرقم الآلي للعنوان (PACI)",
     civil_id: "الرقم المدني",
     transfer_asset: "نقل موقع العمل",
-    curr_kwd: "دينار كويتي (د.ك)",
-    demo_mgmt: "إدارة البيانات التجريبية",
-    demo_load: "تحميل البيانات التجريبية",
-    demo_view: "عرض البيانات التجريبية",
-    demo_clear: "مسح كافة البيانات التجريبية",
-    demo_active: "البيانات التجريبية نشطة",
-    demo_none: "لا توجد بيانات تجريبية"
+    curr_kwd: "دينار كويتي (د.ك)"
   }
 };
 
@@ -2084,11 +2066,10 @@ V.ws = async () => {
 };
 
 V.admin = async () => {
-  const [uList, bList, audList, demoInfo] = await Promise.all([
+  const [uList, bList, audList] = await Promise.all([
     api("/users"),
     can("settings") ? api("/admin/backups") : [],
-    api("/audit"),
-    can("user.manage") ? api("/admin/demo/status").catch(() => null) : null
+    api("/audit")
   ]);
 
   return `
@@ -2106,82 +2087,6 @@ V.admin = async () => {
       ${B("editUser", r.id, "Edit / Password")}
       ${B("toggleUser", r.id, r.active ? "Deactivate" : "Activate")}
     `)}
-
-    ${demoInfo ? `
-      <h3 class="d" style="margin-top:2.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-        <span>${t("demo_mgmt", "Demo Data Management")}</span>
-        ${demoInfo.loaded ? `
-          <span class="chip c-assigned" style="font-weight:700">● ${t("demo_active", "Demo Data Loaded")} (${demoInfo.total} records)</span>
-        ` : `
-          <span class="chip c-done">○ ${t("demo_none", "No Demo Data Loaded")}</span>
-        `}
-      </h3>
-      <p class="mu" style="margin-bottom:1rem">
-        Populate realistic Kuwait fleet demo records (CAT excavators, Actros tippers, Liebherr cranes, work orders, spare parts) for demonstrations and training, or completely remove all demo records and attached files without touching genuine company assets or user accounts.
-      </p>
-
-      <div class="card" style="padding:1.25rem;margin-bottom:1.25rem;background:var(--sf);border:1px solid var(--ln);border-radius:1rem">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:1rem;margin-bottom:1.25rem">
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Total Demo Records</small>
-            <div style="font-size:2rem;font-weight:700;color:${demoInfo.total > 0 ? 'var(--ac,#2B6CB0)' : 'var(--mu)'}">${demoInfo.total}</div>
-            <small class="mu">Across all 12 modules</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Vehicles & Heavy Equipment</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${demoInfo.counts.assets || 0}</div>
-            <small class="mu">Kuwait registered units</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Complaints & Work Orders</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${(demoInfo.counts.complaints || 0) + (demoInfo.counts.work_orders || 0)}</div>
-            <small class="mu">${demoInfo.counts.complaints || 0} complaints · ${demoInfo.counts.work_orders || 0} WOs</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Spare Parts & Stock Tx</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${(demoInfo.counts.parts || 0) + (demoInfo.counts.stock_tx || 0)}</div>
-            <small class="mu">${demoInfo.counts.parts || 0} catalog · ${demoInfo.counts.stock_tx || 0} moves</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Purchases & Invoices</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${demoInfo.counts.purchases || 0}</div>
-            <small class="mu">Orders in KWD</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Maintenance Expenses</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${demoInfo.counts.expenses || 0}</div>
-            <small class="mu">Parts, inspection & cert</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Demo Files & Attachments</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${demoInfo.counts.documents || 0}</div>
-            <small class="mu">${((demoInfo.file_storage_bytes || 0) / 1024).toFixed(1)} KB on disk</small>
-          </div>
-          <div style="background:#fff;padding:1rem;border-radius:.75rem;border:1px solid var(--ln)">
-            <small style="color:var(--mu);text-transform:uppercase;font-size:.7rem;font-weight:700">Other Demo Records</small>
-            <div style="font-size:2rem;font-weight:700;color:var(--ink)">${(demoInfo.counts.transfers || 0) + (demoInfo.counts.historical_records || 0) + (demoInfo.counts.suppliers || 0) + (demoInfo.counts.notifications || 0)}</div>
-            <small class="mu">History, transfers, suppliers</small>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;padding-top:.75rem;border-top:1px solid var(--ln)">
-          <button class="btn" data-a="loadDemo" ${demoInfo.loaded ? 'style="opacity:0.6"' : ''}>
-            📥 ${t("demo_load", "Load Demo Data")}
-          </button>
-          <button class="btn g" data-a="viewDemo" ${!demoInfo.loaded ? 'disabled style="opacity:0.5"' : ''}>
-            👁️ ${t("demo_view", "View Demo Data")}
-          </button>
-          <button class="btn" data-a="clearDemo" style="background:#c0392b;color:#fff;border-color:#a93226;font-weight:700;margin-left:auto" ${demoInfo.total === 0 ? 'disabled style="background:#d98880;border-color:#d98880;cursor:not-allowed"' : ''}>
-            🗑️ ${t("demo_clear", "CLEAR ALL DEMO DATA")}
-          </button>
-        </div>
-        ${demoInfo.last_cleanup ? `
-          <div style="margin-top:.75rem;font-size:.75rem;color:var(--mu)">
-            Last demo cleanup performed at: <b>${esc(demoInfo.last_cleanup)}</b> (Automatic pre-cleanup database backup snapshot preserved).
-          </div>
-        ` : ""}
-      </div>
-    ` : ""}
 
     ${can("settings") ? `
       <h3 class="d" style="margin-top:2.5rem">Kuwait Base Currency & Multi-Currency Exchange Rates</h3>
@@ -3049,190 +2954,6 @@ ACT.editRate = async d => {
 ACT.notifAll = async () => {
   await post("/notifications/read-all");
   await done("All notifications marked read.");
-};
-
-ACT.loadDemo = async () => {
-  const st = await api("/admin/demo/status");
-  if (st.loaded) {
-    if (!confirm("Standard Kuwait fleet demo dataset is already loaded in the database. Do you wish to reload?")) return;
-  }
-  const r = await post("/admin/demo/load");
-  await done(r.message || "Demo dataset loaded successfully!");
-  go("admin");
-};
-
-ACT.viewDemo = async () => {
-  const d = await api("/admin/demo/preview");
-  const aTbl = (d.assets && d.assets.length) ? `
-    <h4 style="margin:1rem 0 .5rem;color:var(--ink)">Demo Vehicles & Heavy Equipment (${d.assets.length})</h4>
-    <div class="tw card" style="margin-bottom:1rem">
-      <table>
-        <thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Kuwait Plate No.</th><th>Status</th><th>Purchase Cost</th></tr></thead>
-        <tbody>
-          ${d.assets.map(a => `<tr><td><b>${esc(a.code)}</b></td><td>${esc(a.name)}</td><td>${esc(a.category)}</td><td>${esc(a.reg_no || "-")}</td><td>${chip(a.status)}</td><td>${rs(a.purchase_cost)}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>` : `<p class="mu">No demo assets found.</p>`;
-
-  const wTbl = (d.work_orders && d.work_orders.length) ? `
-    <h4 style="margin:1rem 0 .5rem;color:var(--ink)">Demo Work Orders (${d.work_orders.length})</h4>
-    <div class="tw card" style="margin-bottom:1rem">
-      <table>
-        <thead><tr><th>Code</th><th>Asset</th><th>Description</th><th>Priority</th><th>Status</th></tr></thead>
-        <tbody>
-          ${d.work_orders.map(w => `<tr><td><b>${esc(w.code)}</b></td><td>${esc(w.asset_name)}</td><td>${esc(w.description)}</td><td>${esc(w.priority)}</td><td>${chip(w.status)}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>` : "";
-
-  const pTbl = (d.parts && d.parts.length) ? `
-    <h4 style="margin:1rem 0 .5rem;color:var(--ink)">Demo Spare Parts (${d.parts.length})</h4>
-    <div class="tw card" style="margin-bottom:1rem">
-      <table>
-        <thead><tr><th>Stock ID</th><th>Part Name</th><th>Stock Qty</th><th>Unit Cost</th></tr></thead>
-        <tbody>
-          ${d.parts.map(p => `<tr><td><b>${esc(p.stock_id)}</b></td><td>${esc(p.name)}</td><td>${p.qty}</td><td>${rs(p.unit_cost)}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>` : "";
-
-  const eTbl = (d.expenses && d.expenses.length) ? `
-    <h4 style="margin:1rem 0 .5rem;color:var(--ink)">Demo Maintenance Expenses (${d.expenses.length})</h4>
-    <div class="tw card" style="margin-bottom:1rem">
-      <table>
-        <thead><tr><th>Ref</th><th>Asset</th><th>Kind</th><th>Amount (KWD)</th></tr></thead>
-        <tbody>
-          ${d.expenses.map(e => `<tr><td><b>${esc(e.ref || "EXP")}</b></td><td>${esc(e.asset_name)}</td><td>${esc(e.kind)}</td><td>${rs(e.amount)}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>` : "";
-
-  show("Active Demo Dataset Overview", `
-    <p class="mu" style="margin-bottom:1rem">The records below carry <code>is_demo = 1</code> in SQLite and are isolated from real company data.</p>
-    ${aTbl}
-    ${wTbl}
-    ${pTbl}
-    ${eTbl}
-  `);
-};
-
-ACT.clearDemo = async () => {
-  const st = await api("/admin/demo/status");
-  if (!st || st.total === 0) {
-    return alert("There is no demo data currently in the database to clear.");
-  }
-
-  return new Promise(resolve => {
-    const d = document.createElement("dialog");
-    d.className = "dlg";
-    d.style.maxWidth = "38rem";
-    d.innerHTML = `
-      <form method="dialog">
-        <div style="background:#fde8e8;border:2px solid #e02424;border-radius:1rem;padding:1.25rem;margin-bottom:1.25rem">
-          <div style="display:flex;align-items:center;gap:.6rem;color:#9b1c1c;font-weight:700;font-size:1.15rem;margin-bottom:.5rem">
-            <span style="font-size:1.5rem">⚠️</span>
-            <span>PERMANENT DEMO DATA CLEANUP</span>
-          </div>
-          <p style="color:#771d1d;font-size:.9rem;line-height:1.45;margin:0 0 .75rem">
-            This operation will <b>permanently delete</b> all demo records, simulated Kuwait assets, work orders, demo spare parts, purchases, expenses, and physically delete demo attachments from storage.
-          </p>
-          <div style="background:#fff;border-radius:.6rem;padding:.75rem;border:1px solid #f8b4b4;font-size:.85rem;color:#1f2937">
-            <b style="display:block;margin-bottom:.4rem;color:#111">Records to be permanently removed:</b>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem">
-              <div>• Vehicles & Equipment: <b>${st.counts.assets || 0}</b></div>
-              <div>• Complaints: <b>${st.counts.complaints || 0}</b></div>
-              <div>• Work Orders: <b>${st.counts.work_orders || 0}</b></div>
-              <div>• Spare Parts Catalog: <b>${st.counts.parts || 0}</b></div>
-              <div>• Stock Transactions: <b>${st.counts.stock_tx || 0}</b></div>
-              <div>• Purchases & Invoices: <b>${st.counts.purchases || 0}</b></div>
-              <div>• Maintenance Expenses: <b>${st.counts.expenses || 0}</b></div>
-              <div>• Historical Records: <b>${st.counts.historical_records || 0}</b></div>
-              <div>• Worksites Transfers: <b>${st.counts.transfers || 0}</b></div>
-              <div>• Demo Suppliers: <b>${st.counts.suppliers || 0}</b></div>
-              <div>• Files & Attachments: <b>${st.counts.documents || 0}</b></div>
-              <div>• Demo Notifications: <b>${st.counts.notifications || 0}</b></div>
-            </div>
-            <div style="margin-top:.6rem;padding-top:.4rem;border-top:1px dashed #f8b4b4;font-weight:700;color:#9b1c1c;display:flex;justify-content:space-between">
-              <span>Total Demo Records:</span>
-              <span>${st.total} records</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.75rem;padding:.75rem 1rem;font-size:.825rem;color:#166534;margin-bottom:1.25rem">
-          🛡️ <b>Safety Guarantee:</b> All real company records, employee accounts, authentic worksites, and non-demo assets are completely protected and will NOT be touched. An automatic SQLite database snapshot backup will be created prior to deletion.
-        </div>
-
-        <div style="margin-bottom:1.25rem">
-          <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:.5rem;color:var(--ink)">
-            To confirm permanent cleanup, type <span style="color:#e02424;font-family:monospace;font-size:1rem;background:#fee2e2;padding:2px 6px;border-radius:4px">CONFIRM</span> below:
-          </label>
-          <input type="text" id="demoConfirmInput" placeholder="Type CONFIRM" style="width:100%;text-align:center;font-weight:700;letter-spacing:3px;font-size:1.1rem;padding:.65rem;border:2px solid var(--ln);border-radius:.5rem;text-transform:uppercase" autocomplete="off" required>
-        </div>
-
-        <div id="clearProgress" style="display:none;margin-bottom:1rem;text-align:center;color:#b91c1c;font-weight:600">
-          ⏳ Executing database cleanup and purging files...
-        </div>
-
-        <div style="display:flex;justify-content:flex-end;gap:.75rem">
-          <button type="button" class="btn g" data-c>${t("cancel")}</button>
-          <button type="submit" id="btnExecClear" class="btn" style="background:#c0392b;color:#fff;border-color:#9b1c1c;font-weight:700">
-            🗑️ Confirm & Clear All Demo Data
-          </button>
-        </div>
-      </form>
-    `;
-    document.body.append(d);
-    d.showModal();
-
-    const inp = d.querySelector("#demoConfirmInput");
-    const form = d.querySelector("form");
-    const btnCancel = d.querySelector("[data-c]");
-    const btnExec = d.querySelector("#btnExecClear");
-    const progress = d.querySelector("#clearProgress");
-
-    btnCancel.onclick = () => { d.close(); };
-    d.onclose = () => { d.remove(); resolve(false); };
-
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      if (inp.value.trim().toUpperCase() !== "CONFIRM") {
-        alert("Confirmation text does not match. Please type CONFIRM exactly.");
-        inp.focus();
-        return;
-      }
-      btnExec.disabled = true;
-      btnCancel.disabled = true;
-      inp.disabled = true;
-      progress.style.display = "block";
-
-      try {
-        const res = await post("/admin/demo/clear");
-        d.close();
-        show("Demo Data Cleared Successfully", `
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:1rem;padding:1.25rem;margin:1rem 0;color:#166534">
-            <h4 style="margin:0 0 .5rem;color:#15803d;font-size:1.1rem">✅ Complete Demo Cleanup Finished</h4>
-            <p style="margin:0 0 .75rem;font-size:.9rem">${esc(res.message || "All demo data removed successfully.")}</p>
-            <ul style="margin:0;padding-left:1.25rem;font-size:.85rem;line-height:1.6">
-              <li><b>${res.total_deleted}</b> demo records removed across all database tables.</li>
-              <li><b>${res.deleted_files}</b> demo-only physical attachments and uploaded bills purged from disk.</li>
-              <li>Part inventory stock balances automatically verified and reconciled.</li>
-              <li>Pre-cleanup safety backup created: <code>${esc(res.backup_file || "fleethub-pre-democleanup-*.db")}</code></li>
-            </ul>
-          </div>
-          <p class="mu" style="font-size:.85rem">All genuine company assets, users, worksites, and real records remain 100% intact.</p>
-        `);
-        go("admin");
-        resolve(true);
-      } catch (err) {
-        progress.style.display = "none";
-        btnExec.disabled = false;
-        btnCancel.disabled = false;
-        inp.disabled = false;
-        alert("Cleanup error: " + err.message);
-      }
-    };
-  });
 };
 
 // ---------------- APP SHELL & BOOT ----------------

@@ -32,6 +32,29 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
             "Content-Type": "application/json"
         }
 
+        # Ensure active assets for tests
+        res_ast = cls.admin_client.get("/api/assets", headers=cls.admin_headers)
+        assets = [a for a in json.loads(res_ast.data) if not a.get("archived")]
+        if not assets:
+            create_res = cls.admin_client.post("/api/assets", json={
+                "name": "Fixture CAT 320D Excavator",
+                "category": "Excavator",
+                "equipment_type": "Hydraulic Excavator",
+                "manufacturer": "Caterpillar",
+                "model": "320D",
+                "year": 2023,
+                "reg_no": "TEST-FX-01",
+                "purchase_cost": 45000.0,
+                "plate_category": "Heavy Equipment",
+                "worksite_id": 1,
+                "paci_no": "29103948"
+            }, headers=cls.admin_headers)
+            cls.asset_id = json.loads(create_res.data)["id"]
+            cls.asset_id_2 = cls.asset_id
+        else:
+            cls.asset_id = assets[0]["id"]
+            cls.asset_id_2 = assets[1]["id"] if len(assets) > 1 else assets[0]["id"]
+
     @classmethod
     def tearDownClass(cls):
         from src.config import config
@@ -161,7 +184,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
         """TC-CMP-01: Create breakdown complaint, review and approve."""
         # 1. Create complaint
         res = self.client.post("/api/complaints", json={
-            "asset_id": 1,
+            "asset_id": self.asset_id,
             "description": "Engine coolant temperature high during heavy excavation work",
             "priority": "High",
             "location": "Sulaibiya Sector 4",
@@ -182,14 +205,14 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
 
     def test_complaint_empty_description_validation(self):
         """TC-CMP-02: Complaint without description or audio transcript is rejected."""
-        res = self.client.post("/api/complaints", json={"asset_id": 1, "description": ""}, headers=self.admin_headers)
+        res = self.client.post("/api/complaints", json={"asset_id": self.asset_id, "description": ""}, headers=self.admin_headers)
         self.assertEqual(res.status_code, 400)
 
     def test_complaint_reject_requires_note(self):
         """TC-CMP-03: Rejecting a complaint without a mandatory note returns 400."""
         # Create fresh complaint
         res = self.client.post("/api/complaints", json={
-            "asset_id": 1,
+            "asset_id": self.asset_id,
             "description": "Minor door handle rattle",
             "priority": "Low",
             "location": "Yard",
@@ -211,7 +234,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
         """TC-WO-01: Convert an approved complaint into a formal work order."""
         # Create & approve complaint
         res_c = self.client.post("/api/complaints", json={
-            "asset_id": 2,
+            "asset_id": self.asset_id_2,
             "description": "Rear suspension spring crack noticed during safety pre-check",
             "priority": "High",
             "location": "Shuwaikh Workshop",
@@ -246,7 +269,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
     def test_work_order_invalid_stage_progression_rejected(self):
         """TC-WO-02: Skipping lifecycle stages (e.g. Pending directly to Released) is rejected."""
         res_wo = self.client.post("/api/work-orders", json={
-            "asset_id": 1,
+            "asset_id": self.asset_id,
             "category": "Test",
             "description": "Lifecycle bypass attempt test"
         }, headers=self.admin_headers)
@@ -319,8 +342,16 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
         pid = json.loads(res.data)["id"]
         self.client.post(f"/api/parts/{pid}/stock", json={"kind": "in", "qty": 1.0}, headers=self.admin_headers)
 
-        # Attempt to issue 5 units against WO 1
-        res_issue = self.client.post(f"/api/parts/{pid}/issue", json={"wo_id": 1, "qty": 5.0}, headers=self.admin_headers)
+        # Create valid work order to issue against
+        res_wo = self.client.post("/api/work-orders", json={
+            "asset_id": self.asset_id,
+            "category": "Mechanical Repair",
+            "description": "Stock overdraw test WO"
+        }, headers=self.admin_headers)
+        wo_id = json.loads(res_wo.data)["id"]
+
+        # Attempt to issue 5 units against WO
+        res_issue = self.client.post(f"/api/parts/{pid}/issue", json={"wo_id": wo_id, "qty": 5.0}, headers=self.admin_headers)
         self.assertEqual(res_issue.status_code, 409)
 
     # =========================================================================
@@ -333,7 +364,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
             "qty": 2.0,
             "currency": "USD",
             "est_price": 500.0,  # 500 USD each
-            "asset_id": 1,
+            "asset_id": self.asset_id,
             "supplier": "Mohamed Abdulrahman Al-Bahar (CAT Kuwait Dealer)"
         }, headers=self.admin_headers)
         self.assertEqual(res.status_code, 200)
@@ -356,7 +387,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
             "part_name": pt["name"],
             "part_id": pt["id"],
             "qty": 1.0,
-            "asset_id": 1,
+            "asset_id": self.asset_id,
             "to_stock": 0
         }, headers=self.admin_headers)
         self.assertEqual(res_pur.status_code, 409)
@@ -403,7 +434,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
     def test_expense_internal_labour_blocked(self):
         """TC-EXP-01: Charging internal mechanics' labour is strictly prohibited (0.000 KWD rule)."""
         res = self.client.post("/api/expenses", data={
-            "asset_id": "1",
+            "asset_id": str(self.asset_id),
             "kind": "internal_labour",
             "amount": "50.000"
         }, headers={"Authorization": f"Bearer {self.admin_token}"})
@@ -413,7 +444,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
     def test_expense_requires_bill_receipt(self):
         """TC-EXP-02: Logging an external expense without attaching an invoice/receipt returns 400."""
         res = self.client.post("/api/expenses", data={
-            "asset_id": "1",
+            "asset_id": str(self.asset_id),
             "kind": "towing",
             "amount": "25.000"
         }, headers={"Authorization": f"Bearer {self.admin_token}"})
@@ -424,7 +455,7 @@ class FleetHubFullSuiteTestCase(unittest.TestCase):
         """TC-EXP-03: Logging an external expense with valid receipt file succeeds."""
         dummy_file = (io.BytesIO(b"%PDF-1.4 sample bill invoice"), "receipt.pdf")
         res = self.client.post("/api/expenses", data={
-            "asset_id": "1",
+            "asset_id": str(self.asset_id),
             "kind": "towing",
             "amount": "30.000",
             "currency": "KWD",

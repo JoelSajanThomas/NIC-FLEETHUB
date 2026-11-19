@@ -5,7 +5,6 @@ from .supplier_controller import supplier_bp
 from .currency_controller import currency_bp
 from .voice_controller import voice_bp
 from .sync_controller import sync_bp
-from .demo_controller import demo_bp
 from .inquiry_controller import inquiry_bp
 from .asset_controller import asset_bp
 from .complaint_controller import complaint_bp

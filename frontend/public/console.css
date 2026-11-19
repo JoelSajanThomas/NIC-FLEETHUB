@@ -154,7 +154,8 @@
   flex-shrink: 0;
 }
 
-.icon-btn:hover, .icon-btn:active {
+.icon-btn:hover,
+.icon-btn:active {
   background: var(--sf);
 }
 
@@ -186,8 +187,15 @@
 }
 
 @keyframes searchSlide {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .mobile-search-form {
@@ -333,7 +341,8 @@
   text-align: right;
 }
 
-.drawer-item:hover, .drawer-item:active {
+.drawer-item:hover,
+.drawer-item:active {
   background: var(--sf);
   color: #111;
 }
@@ -452,22 +461,33 @@
    5. RESPONSIVE BREAKPOINT SWITCHING & ORIENTATION
    -------------------------------------------------------------------------- */
 @media (max-width: 1023px) {
-  .top.desktop-header, .nav.desktop-nav {
+
+  .top.desktop-header,
+  .nav.desktop-nav {
     display: none !important;
   }
-  .mobile-header, .mobile-bottom-nav {
+
+  .mobile-header,
+  .mobile-bottom-nav {
     display: flex !important;
   }
+
   .wrap {
     padding-bottom: calc(var(--bottom-nav-h) + var(--sab) + 2rem) !important;
   }
 }
 
 @media (min-width: 1024px) {
-  .mobile-header, .mobile-bottom-nav, .mobile-drawer-overlay, .mobile-search-bar {
+
+  .mobile-header,
+  .mobile-bottom-nav,
+  .mobile-drawer-overlay,
+  .mobile-search-bar {
     display: none !important;
   }
-  .top.desktop-header, .nav.desktop-nav {
+
+  .top.desktop-header,
+  .nav.desktop-nav {
     display: flex !important;
   }
 }
@@ -501,9 +521,11 @@
   .responsive-view-wrapper .table-desktop-view {
     display: block !important;
   }
+
   .responsive-view-wrapper .table-mobile-cards {
     display: none !important;
   }
+
   .view-toggle-bar {
     display: none !important;
   }
@@ -513,6 +535,7 @@
   .responsive-view-wrapper.cards .table-mobile-cards {
     display: grid !important;
   }
+
   .responsive-view-wrapper.cards .table-desktop-view {
     display: none !important;
   }
@@ -520,6 +543,7 @@
   .responsive-view-wrapper.table .table-desktop-view {
     display: block !important;
   }
+
   .responsive-view-wrapper.table .table-mobile-cards {
     display: none !important;
   }
@@ -655,6 +679,7 @@
   .report-scroll-helper {
     display: inline-flex;
   }
+
   .rep-sheet {
     padding: .75rem .5rem;
     border-radius: 1rem;
@@ -722,9 +747,11 @@
     align-items: flex-end;
     justify-content: space-between;
   }
+
   .report-select-group {
     max-width: 26rem;
   }
+
   .report-actions {
     width: auto;
     flex: 1;
@@ -807,7 +834,8 @@
   margin-bottom: .15rem;
 }
 
-.card-kv-item span, .card-kv-item b {
+.card-kv-item span,
+.card-kv-item b {
   font-size: .85rem;
   color: #222;
   word-break: break-word;
@@ -964,8 +992,13 @@
   }
 
   @keyframes sheetUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+    from {
+      transform: translateY(100%);
+    }
+
+    to {
+      transform: translateY(0);
+    }
   }
 
   .dlg-header {
@@ -1066,7 +1099,8 @@
   margin-bottom: 1rem;
 }
 
-.filter-bar select, .filter-bar input {
+.filter-bar select,
+.filter-bar input {
   flex: 1;
   min-width: 9rem;
   max-width: 14rem;
@@ -1077,7 +1111,9 @@
 }
 
 @media (max-width: 640px) {
-  .filter-bar select, .filter-bar input {
+
+  .filter-bar select,
+  .filter-bar input {
     max-width: 100%;
     flex-basis: 100%;
   }
@@ -1192,7 +1228,8 @@
   box-sizing: border-box;
 }
 
-form.login.card, .login {
+form.login.card,
+.login {
   max-width: 26rem;
   width: 100%;
   margin: 0 auto !important;
@@ -1243,7 +1280,8 @@ form.login.card, .login {
   text-align: right;
 }
 
-[dir="rtl"] th, [dir="rtl"] td {
+[dir="rtl"] th,
+[dir="rtl"] td {
   text-align: right;
 }
 
@@ -1252,7 +1290,9 @@ form.login.card, .login {
   margin-right: .35rem;
 }
 
-[dir="rtl"] .card-code-badge, [dir="rtl"] .kpi, [dir="rtl"] code {
+[dir="rtl"] .card-code-badge,
+[dir="rtl"] .kpi,
+[dir="rtl"] code {
   direction: ltr;
   display: inline-block;
 }
@@ -1388,27 +1428,44 @@ form.login.card, .login {
 }
 
 @media print {
-  .top, .nav, .mobile-header, .mobile-bottom-nav, .mobile-drawer-overlay,
-  .mobile-search-bar, .noprint, .bar2, .filter-bar, .voice-box, #fleethub-conn-banner {
+
+  .top,
+  .nav,
+  .mobile-header,
+  .mobile-bottom-nav,
+  .mobile-drawer-overlay,
+  .mobile-search-bar,
+  .noprint,
+  .bar2,
+  .filter-bar,
+  .voice-box,
+  #fleethub-conn-banner {
     display: none !important;
   }
+
   body {
     background: #fff !important;
     color: #000 !important;
   }
+
   .wrap {
     padding: 0 !important;
     max-width: 100% !important;
   }
-  .card, .dlg {
+
+  .card,
+  .dlg {
     box-shadow: none !important;
     border: 1px solid #ddd !important;
     max-width: 100% !important;
   }
+
   table {
     font-size: 8pt !important;
   }
-  th, td {
+
+  th,
+  td {
     padding: 4px 6px !important;
     border-bottom: 1px solid #ccc !important;
   }

@@ -9,8 +9,8 @@ def seed_defaults():
     con = connect()
     cur = con.cursor()
 
-    # 1. Default Role Demo Users (One per role)
-    demo_users = [
+    # 1. Default Role Accounts (One per operational role)
+    default_users = [
         ("admin", "Administrator", "admin", os.environ.get("FLEETHUB_ADMIN_PASSWORD", "admin12345"), "en"),
         ("superadmin", "Super Administrator", "super_admin", "superadmin12345", "en"),
         ("companyadmin", "Executive Director", "company_admin", "company12345", "en"),
@@ -23,7 +23,7 @@ def seed_defaults():
         ("driver", "Rashed Al-Mutairi", "driver", "driver12345", "ar"),
         ("management", "Operations Director", "management", "management12345", "en")
     ]
-    for u_name, name, role, pw, lang in demo_users:
+    for u_name, name, role, pw, lang in default_users:
         cur.execute("SELECT id FROM users WHERE username = ?", (u_name,))
         if not cur.fetchone():
             hashed = generate_password_hash(pw)
@@ -78,12 +78,6 @@ def seed_defaults():
                 "INSERT INTO exchange_rates(currency, rate_to_kwd, is_auto, source, last_updated) VALUES(?,?,1,?,?)",
                 (curr, rate, src, now())
             )
-
-    # 5. Populate Kuwait operational demo fleet if database is empty of assets
-    cur.execute("SELECT COUNT(*) FROM assets")
-    if cur.fetchone()[0] == 0:
-        from ...services.demo_service import load_demo_dataset
-        load_demo_dataset(cur)
 
     con.commit()
     con.close()
