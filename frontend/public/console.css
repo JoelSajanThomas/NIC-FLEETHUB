@@ -1058,11 +1058,6 @@
   gap: clamp(.625rem, 1.8vw, 1rem);
 }
 
-min-height: 48px;
-font-size: .95rem;
-}
-}
-
 .dlg-close-btn {
   width: 44px;
   height: 44px;
