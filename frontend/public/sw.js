@@ -9,7 +9,7 @@
  * 4. Network-first for JavaScript, CSS, and HTML navigations so code updates load immediately.
  */
 
-const CACHE_NAME = "fleethub-shell-v2.2.0";
+const CACHE_NAME = "fleethub-shell-v2.5.0";
 
 // Static UI Assets (Application Shell)
 const STATIC_ASSETS = [

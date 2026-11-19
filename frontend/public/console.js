@@ -42,6 +42,16 @@ const I18N = {
     date: "Date",
     details: "Details",
     all_healthy: "All healthy",
+    cards_view: "Cards",
+    table_view: "Table",
+    more_details: "More Details ▾",
+    hide_details: "Hide Details ▴",
+    all_kpis: "Show All Metrics ▾",
+    collapse_kpis: "Show Fewer Metrics ▴",
+    quick_search: "Search fleet or inventory...",
+    menu: "Menu",
+    more_modules: "More Modules",
+    install_app: "📱 Install FleetHub App",
     // Nav items
     nav_dash: "Dashboard",
     nav_assets: "Assets",
@@ -155,6 +165,16 @@ const I18N = {
     date: "दिनांक",
     details: "विवरण",
     all_healthy: "सब सामान्य है",
+    cards_view: "कार्ड्स",
+    table_view: "तालिका",
+    more_details: "अधिक विवरण ▾",
+    hide_details: "कम विवरण ▴",
+    all_kpis: "सभी मेट्रिक्स देखें ▾",
+    collapse_kpis: "कम मेट्रिक्स देखें ▴",
+    quick_search: "खोजें...",
+    menu: "मेनू",
+    more_modules: "अन्य मॉड्यूल",
+    install_app: "📱 ऐप इंस्टॉल करें",
     nav_dash: "डैशबोर्ड",
     nav_assets: "वाहन एवं मशीनरी",
     nav_comp: "शिकायतें व ब्रेकडाउन",
@@ -263,6 +283,16 @@ const I18N = {
     date: "التاريخ",
     details: "التفاصيل",
     all_healthy: "الوضع ممتاز",
+    cards_view: "بطاقات",
+    table_view: "جدول",
+    more_details: "تفاصيل إضافية ▾",
+    hide_details: "إخفاء التفاصيل ▴",
+    all_kpis: "عرض كافة المؤشرات ▾",
+    collapse_kpis: "عرض أقل ▴",
+    quick_search: "بحث في الأسطول...",
+    menu: "القائمة",
+    more_modules: "المزيد من الأقسام",
+    install_app: "📱 تثبيت التطبيق",
     nav_dash: "لوحة التحكم",
     nav_assets: "الأسطول والمعدات",
     nav_comp: "البلاغات والأعطال",
@@ -936,34 +966,79 @@ function setupDocumentAutoFill(formContainer, fileInput, docContext = "purchase"
   });
 }
 
+function renderFormField(f) {
+  return `
+    <div id="field_${f.n}">
+      <label>
+        ${esc(f.l)}
+        ${f.t === "select" ? `
+          <select name="${f.n}" ${f.r ? "required" : ""}>
+            ${(f.o || []).map(o => `<option value="${esc(o[0])}" ${String(o[0]) === String(f.v ?? "") ? "selected" : ""}>${esc(o[1])}</option>`).join("")}
+          </select>
+        ` : f.t === "textarea" ? `
+          <textarea name="${f.n}" rows="3" ${f.r ? "required" : ""}>${esc(f.v ?? "")}</textarea>
+        ` : `
+          <input name="${f.n}" type="${f.t || "text"}" ${f.t === "number" ? 'step="any" inputmode="decimal"' : ""} ${f.t === "file" ? 'accept=".pdf,.jpg,.jpeg,.png,.webp"' : ""} ${f.r ? "required" : ""} ${f.t === "file" ? "" : `value="${esc(f.v ?? "")}"`}>
+        `}
+      </label>
+    </div>
+  `;
+}
+
 function ask(title, fs, voiceField = null) {
   return new Promise(res => {
     const d = document.createElement("dialog");
     d.className = "dlg";
-    d.innerHTML = `
-      <form method="dialog">
-        <h3 class="d" style="margin-bottom:1rem">${esc(title)}</h3>
-        <div style="display:grid;gap:.75rem">
-          ${fs.map(f => `
-            <div id="field_${f.n}">
-              <label>
-                ${esc(f.l)}
-                ${f.t === "select" ? `
-                  <select name="${f.n}" ${f.r ? "required" : ""}>
-                    ${(f.o || []).map(o => `<option value="${esc(o[0])}" ${String(o[0]) === String(f.v ?? "") ? "selected" : ""}>${esc(o[1])}</option>`).join("")}
-                  </select>
-                ` : f.t === "textarea" ? `
-                  <textarea name="${f.n}" rows="3" ${f.r ? "required" : ""}>${esc(f.v ?? "")}</textarea>
-                ` : `
-                  <input name="${f.n}" type="${f.t || "text"}" ${f.t === "number" ? 'step="any"' : ""} ${f.t === "file" ? 'accept=".pdf,.jpg,.jpeg,.png,.webp"' : ""} ${f.r ? "required" : ""} ${f.t === "file" ? "" : `value="${esc(f.v ?? "")}"`}>
-                `}
-              </label>
-            </div>
-          `).join("")}
+
+    let fieldsHtml = "";
+    if (fs.length > 6) {
+      const groups = [
+        { title: "General Identification", icon: "📋", fields: [] },
+        { title: "Machinery Specifications", icon: "⚙️", fields: [] },
+        { title: "Assignment & Location", icon: "📍", fields: [] },
+        { title: "Kuwait Compliance & Insurance", icon: "🛡️", fields: [] },
+        { title: "Technical Details & Remarks", icon: "📝", fields: [] }
+      ];
+
+      fs.forEach(f => {
+        const n = f.n;
+        if (["name", "category", "plate_category", "reg_no", "equipment_type"].includes(n)) {
+          groups[0].fields.push(f);
+        } else if (["manufacturer", "brand", "model", "year", "vin", "engine_no", "serial_no", "ownership_type"].includes(n)) {
+          groups[1].fields.push(f);
+        } else if (["country", "governorate", "paci_no", "operator", "civil_id_operator", "department", "worksite_id", "status"].includes(n)) {
+          groups[2].fields.push(f);
+        } else if (["purchase_date", "purchase_cost", "insurance_company", "insurance_policy", "insurance_expiry", "inspection_expiry", "reg_expiry"].includes(n)) {
+          groups[3].fields.push(f);
+        } else {
+          groups[4].fields.push(f);
+        }
+      });
+
+      fieldsHtml = groups.filter(g => g.fields.length > 0).map(g => `
+        <div class="form-section-title">
+          <span>${g.icon}</span> ${esc(g.title)}
         </div>
-        <div id="voiceAnchor"></div>
-        <p class="err" id="dlgErr"></p>
-        <div style="margin-top:1.25rem;display:flex;gap:.5rem">
+        <div class="form-fields-grid" style="display:grid;gap:.75rem">
+          ${g.fields.map(f => renderFormField(f)).join("")}
+        </div>
+      `).join("");
+    } else {
+      fieldsHtml = `<div style="display:grid;gap:.75rem">${fs.map(f => renderFormField(f)).join("")}</div>`;
+    }
+
+    d.innerHTML = `
+      <form method="dialog" style="display:flex;flex-direction:column;height:100%">
+        <div class="dlg-header">
+          <h3 class="d" style="margin:0">${esc(title)}</h3>
+          <button type="button" class="dlg-close-btn" data-c aria-label="Close dialog">✕</button>
+        </div>
+        <div class="dlg-body">
+          ${fieldsHtml}
+          <div id="voiceAnchor"></div>
+          <p class="err" id="dlgErr"></p>
+        </div>
+        <div class="dlg-footer">
           <button class="btn">${t("submit")}</button>
           <button type="button" class="btn g" data-c>${t("cancel")}</button>
         </div>
@@ -992,7 +1067,7 @@ function ask(title, fs, voiceField = null) {
     });
 
     d.showModal();
-    d.querySelector("[data-c]").onclick = () => d.close();
+    d.querySelectorAll("[data-c]").forEach(b => b.onclick = () => d.close());
     d.onclose = () => { d.remove(); res(null); };
     d.querySelector("form").onsubmit = e => {
       e.preventDefault();
@@ -1005,30 +1080,154 @@ function ask(title, fs, voiceField = null) {
 function show(title, html) {
   const d = document.createElement("dialog");
   d.className = "dlg";
-  d.innerHTML = `<h3 class="d" style="margin-bottom:1rem">${esc(title)}</h3>${html}<div style="margin-top:1.5rem"><button class="btn g" data-c>${t("close")}</button></div>`;
+  d.innerHTML = `
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div class="dlg-header">
+        <h3 class="d" style="margin:0">${esc(title)}</h3>
+        <button type="button" class="dlg-close-btn" data-c aria-label="Close dialog">✕</button>
+      </div>
+      <div class="dlg-body">
+        ${html}
+      </div>
+      <div class="dlg-footer">
+        <button type="button" class="btn g" data-c>${t("close")}</button>
+      </div>
+    </div>
+  `;
   document.body.append(d);
   d.showModal();
-  d.querySelector("[data-c]").onclick = () => d.close();
+  d.querySelectorAll("[data-c]").forEach(b => b.onclick = () => d.close());
   d.onclose = () => d.remove();
 }
 
-const tbl = (cols, data, act) => data.length ? `
-  <div class="tw card" style="margin-top:1rem">
-    <table>
-      <thead>
-        <tr>${cols.map(c => `<th>${c[1]}</th>`).join("")}${act ? `<th>${t("actions")}</th>` : ""}</tr>
-      </thead>
-      <tbody>
-        ${data.map(r => `
+let CURRENT_TABLE_VIEW_MODE = localStorage.getItem("fleethub_table_view_mode") || "cards";
+
+const tbl = (cols, data, act) => {
+  if (!data || !data.length) {
+    return `<p class="mu" style="padding:1.5rem 0">No records found.</p>`;
+  }
+
+  const tid = "tbl_" + Math.random().toString(36).slice(2, 9);
+  const totalCount = data.length;
+
+  // 1. Build Desktop Table View
+  const desktopTableHtml = `
+    <div class="table-desktop-view tw card">
+      <table>
+        <thead>
           <tr>
-            ${cols.map(c => `<td>${c[2] ? c[2](r) : esc(r[c[0]] ?? "")}</td>`).join("")}
-            ${act ? `<td style="white-space:nowrap">${act(r)}</td>` : ""}
+            ${cols.map(c => `<th>${c[1]}</th>`).join("")}
+            ${act ? `<th>${t("actions")}</th>` : ""}
           </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  </div>
-` : `<p class="mu" style="padding:1.5rem 0">No records found.</p>`;
+        </thead>
+        <tbody>
+          ${data.map(r => `
+            <tr>
+              ${cols.map(c => `<td>${c[2] ? c[2](r) : esc(r[c[0]] ?? "")}</td>`).join("")}
+              ${act ? `<td style="white-space:nowrap">${act(r)}</td>` : ""}
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // 2. Build Mobile Cards View
+  const mobileCardsHtml = `
+    <div class="table-mobile-cards">
+      ${data.map((r, rowIdx) => {
+        const rowVals = cols.map(c => ({
+          key: c[0],
+          label: c[1],
+          val: c[2] ? c[2](r) : esc(r[c[0]] ?? "")
+        }));
+
+        const codeItem = rowVals[0] || { val: "-" };
+        const titleItem = rowVals[1] || { val: "-" };
+
+        let statusIdx = cols.findIndex(c => c[0] === "status" || c[1].toLowerCase().includes("status"));
+        let statusItem = statusIdx >= 0 ? rowVals[statusIdx] : null;
+
+        const primaryKVs = [];
+        const secondaryKVs = [];
+
+        rowVals.forEach((item, idx) => {
+          if (idx === 0 || idx === 1 || idx === statusIdx) return;
+          if (primaryKVs.length < 4) {
+            primaryKVs.push(item);
+          } else {
+            secondaryKVs.push(item);
+          }
+        });
+
+        const cardDetailsId = `${tid}_det_${rowIdx}`;
+
+        return `
+          <div class="data-card">
+            <div class="card-top-row">
+              <span class="card-code-badge">${codeItem.val}</span>
+              ${statusItem ? `<div class="card-status-chip">${statusItem.val}</div>` : ""}
+            </div>
+
+            <div class="card-title">${titleItem.val}</div>
+
+            ${primaryKVs.length ? `
+              <div class="card-kv-grid">
+                ${primaryKVs.map(kv => `
+                  <div class="card-kv-item">
+                    <small>${kv.label}</small>
+                    <span>${kv.val || "-"}</span>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
+
+            ${secondaryKVs.length ? `
+              <button type="button" class="card-expand-toggle" data-toggle="${cardDetailsId}">
+                <span>${t("more_details") || "More Details ▾"}</span>
+              </button>
+              <div id="${cardDetailsId}" class="card-details-drawer hidden">
+                ${secondaryKVs.map(kv => `
+                  <div class="card-kv-item">
+                    <small>${kv.label}</small>
+                    <span>${kv.val || "-"}</span>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
+
+            ${act ? `
+              <div class="card-actions-bar">
+                ${act(r)}
+              </div>
+            ` : ""}
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  return `
+    <div class="responsive-data-system" id="${tid}">
+      <div class="view-toggle-bar">
+        <span class="m" style="color:var(--mu);font-size:.8rem">${totalCount} item(s)</span>
+        <div class="view-toggle-pills noprint">
+          <button type="button" class="view-toggle-btn ${CURRENT_TABLE_VIEW_MODE === "cards" ? "active" : ""}" data-viewmode="cards" data-target="${tid}">
+            📱 ${t("cards_view") || "Cards"}
+          </button>
+          <button type="button" class="view-toggle-btn ${CURRENT_TABLE_VIEW_MODE === "table" ? "active" : ""}" data-viewmode="table" data-target="${tid}">
+            📋 ${t("table_view") || "Table"}
+          </button>
+        </div>
+      </div>
+
+      <div class="responsive-view-wrapper ${CURRENT_TABLE_VIEW_MODE}">
+        ${mobileCardsHtml}
+        ${desktopTableHtml}
+      </div>
+    </div>
+  `;
+};
 
 const fileUrl = (id, extra = "") => {
   if (!id) return "";
@@ -1114,12 +1313,45 @@ async function updateAlertBadge() {
   if (!ME || !can("asset.view")) return;
   try {
     LIVE_ALERTS = await api("/alerts");
+    
+    // 1. Desktop alert button
     const b = $("#notifBadge");
     if (b) {
       if (LIVE_ALERTS.total > 0) {
         b.innerHTML = `<span class="dot"></span>🔔 ${t("alerts")} <span class="badge-count">${LIVE_ALERTS.total}</span>`;
       } else {
         b.innerHTML = `🔔 ${t("alerts")}`;
+      }
+    }
+
+    // 2. Mobile header alert button
+    const mbAlerts = $("#btnMobileAlerts");
+    if (mbAlerts) {
+      const existingBadge = mbAlerts.querySelector(".badge-count");
+      if (LIVE_ALERTS.total > 0) {
+        if (existingBadge) {
+          existingBadge.textContent = LIVE_ALERTS.total;
+        } else {
+          mbAlerts.insertAdjacentHTML("beforeend", `<span class="badge-count" style="position:absolute;top:2px;right:2px">${LIVE_ALERTS.total}</span>`);
+        }
+      } else if (existingBadge) {
+        existingBadge.remove();
+      }
+    }
+
+    // 3. Mobile bottom nav tab for complaints
+    const compTab = document.querySelector('.bottom-nav-btn[data-id="comp"]');
+    if (compTab) {
+      const pendingCount = LIVE_ALERTS.pending_complaints || 0;
+      let badge = compTab.querySelector(".bottom-nav-badge");
+      if (pendingCount > 0) {
+        if (!badge) {
+          compTab.querySelector(".bottom-nav-icon")?.insertAdjacentHTML("beforeend", `<span class="bottom-nav-badge">${pendingCount}</span>`);
+        } else {
+          badge.textContent = pendingCount;
+        }
+      } else if (badge) {
+        badge.remove();
       }
     }
   } catch (e) {}
@@ -1131,12 +1363,18 @@ const V = {}, ACT = {};
 V.dash = async () => {
   const d = await api("/dashboard");
   const alerts = await api("/alerts").catch(() => ({ total: 0 }));
-  const k = [
+
+  // Primary operational KPIs
+  const primaryK = [
     [t("kpi_reg_fleet"), d.assets],
     [t("kpi_active"), d.active],
     [t("kpi_repair"), d.under_repair],
+    [t("kpi_open_wo"), d.wo_open]
+  ];
+
+  // Secondary metrics
+  const secondaryK = [
     [t("kpi_out_service"), d.out_of_service],
-    [t("kpi_open_wo"), d.wo_open],
     [t("kpi_waiting_parts"), d.wo_waiting],
     [t("kpi_pending_insp"), d.pending_inspection],
     [t("kpi_new_comp"), d.complaints_new],
@@ -1148,8 +1386,16 @@ V.dash = async () => {
   ];
 
   return `
-    <h2 class="d">${t("nav_dash")}</h2>
-    <p class="mu">${t("app_subtitle")}</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <h2 class="d" style="margin:0">${t("nav_dash")}</h2>
+        <p class="mu">${t("app_subtitle")}</p>
+      </div>
+      <div class="noprint" style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn g sm" data-a="nav" data-id="reports">📊 Reports</button>
+        <button class="btn sm" data-a="nav" data-id="alerts">🔔 ${t("alerts")} ${alerts.total ? `(${alerts.total})` : ""}</button>
+      </div>
+    </div>
 
     ${alerts.total > 0 ? `
       <div class="alert-banner">
@@ -1159,38 +1405,52 @@ V.dash = async () => {
       </div>
     ` : ""}
 
-    <div class="grid-cards">
-      ${k.map(([l, v]) => `
+    <!-- Primary 4 KPIs -->
+    <div class="dash-kpis-grid">
+      ${primaryK.map(([l, v]) => `
+        <div class="stat-box primary-kpi">
+          <div class="kpi">${v ?? 0}</div>
+          <div class="kpi-label">${l}</div>
+        </div>
+      `).join("")}
+    </div>
+
+    <!-- Secondary KPIs Toggle on Mobile -->
+    <button type="button" class="dash-accordion-btn noprint" id="btnToggleMoreKpis">
+      <span>${t("all_kpis") || "Show All Fleet & Store Metrics (9 more) ▾"}</span>
+    </button>
+    <div class="dash-kpis-grid" id="secondaryKpisContainer" style="display:none">
+      ${secondaryK.map(([l, v]) => `
         <div class="stat-box">
           <div class="kpi">${v ?? 0}</div>
-          <div style="font-size:.85rem;color:var(--mu);font-weight:500">${l}</div>
+          <div class="kpi-label">${l}</div>
         </div>
       `).join("")}
     </div>
 
     ${d.monthly ? `
-      <h3 class="d" style="margin-top:2.5rem">${t("monthly_trend")}</h3>
+      <h3 class="d" style="margin-top:2rem">${t("monthly_trend")}</h3>
       <div class="card">
         ${d.monthly.length ? d.monthly.map(m => `
-          <div class="row">
-            <span style="width:7rem;font-size:.875rem">${m.month}</span>
+          <div class="row" style="gap:.75rem">
+            <span style="min-width:4.5rem;font-size:.85rem;font-weight:500">${m.month}</span>
             <div class="bt"><i style="width:${Math.max(2, m.total / Math.max(...d.monthly.map(x => x.total), 1) * 100)}%"></i></div>
-            <b style="width:8rem;text-align:right">${rs(m.total)}</b>
+            <b style="min-width:5.5rem;text-align:right;font-size:.85rem">${rs(m.total)}</b>
           </div>
         `).join("") : "<p class='mu'>No expenses recorded yet.</p>"}
-        <div style="margin-top:1rem;display:flex;justify-content:space-between;border-top:1px solid var(--ln);padding-top:.75rem">
+        <div style="margin-top:1rem;display:flex;justify-content:space-between;border-top:1px solid var(--ln);padding-top:.75rem;flex-wrap:wrap;gap:.5rem">
           <span><b>${t("total_maint_spend")}</b></span>
-          <b>${rs(d.total_spend)}</b>
+          <b style="color:var(--ac);font-size:1.05rem">${rs(d.total_spend)}</b>
         </div>
       </div>
     ` : ""}
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));gap:1.5rem;margin-top:2rem">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1.25rem;margin-top:1.5rem">
       <div class="card">
         <h4 style="margin-bottom:1rem">${t("cat_distribution")}</h4>
         ${(d.categories || []).map(c => `
           <div class="row" style="justify-content:space-between">
-            <span>${esc(c.category)}</span>
+            <span style="font-size:.875rem">${esc(c.category)}</span>
             <b>${c.count} units</b>
           </div>
         `).join("") || "<p class='mu'>No category data yet.</p>"}
@@ -1200,8 +1460,8 @@ V.dash = async () => {
         <h4 style="margin-bottom:1rem">${t("recent_operations")}</h4>
         ${(d.recent_wo || []).map(w => `
           <div style="margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--ln)">
-            <div style="display:flex;justify-content:space-between">
-              <b>${esc(w.code)} · ${esc(w.asset_code)}</b>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+              <b style="font-size:.9rem">${esc(w.code)} · ${esc(w.asset_code)}</b>
               ${chip(w.status)}
             </div>
             <p style="font-size:.85rem;color:#444;margin:.25rem 0">${esc(w.description)}</p>
@@ -1602,10 +1862,10 @@ V.reports = async () => {
   const repData = await api(`/reports/export?type=${rtype}&format=json`).catch(() => ({ headers: [], rows: [] }));
   return `
     <h2 class="d">${t("nav_reports")}</h2>
-    <div class="bar2" style="background:var(--sf);padding:.75rem 1rem;border-radius:1rem;margin-top:1rem">
-      <label style="margin:0;display:flex;align-items:center;gap:.5rem">
+    <div class="report-toolbar card">
+      <label class="report-select-group">
         <span>Select Report:</span>
-        <select id="repType" style="max-width:20rem">
+        <select id="repType" class="report-select">
           <option value="assets" ${rtype === "assets" ? "selected" : ""}>Fleet & Heavy Equipment Register</option>
           <option value="complaints" ${rtype === "complaints" ? "selected" : ""}>Complaints & Breakdowns Summary</option>
           <option value="work_orders" ${rtype === "work_orders" ? "selected" : ""}>Work Orders & Maintenance Log</option>
@@ -1618,12 +1878,18 @@ V.reports = async () => {
           ${can("expense.view") ? `<option value="lifetime_cost" ${rtype === "lifetime_cost" ? "selected" : ""}>Asset Lifetime Maintenance Cost Breakdown</option>` : ""}
         </select>
       </label>
-      <button class="btn sm" id="btnGenRep">Generate View</button>
-      <a id="btnCsvRep" href="/api/reports/export?type=${rtype}&format=csv${localStorage.getItem("fleethub_token") ? "&token=" + encodeURIComponent(localStorage.getItem("fleethub_token")) : ""}" class="btn g sm" download style="display:inline-block">Download CSV (Excel)</a>
-      <button class="btn g sm" onclick="window.print()">Print Report</button>
+      <div class="report-actions">
+        <button class="btn sm" id="btnGenRep">Generate View</button>
+        <a id="btnCsvRep" href="/api/reports/export?type=${rtype}&format=csv${localStorage.getItem("fleethub_token") ? "&token=" + encodeURIComponent(localStorage.getItem("fleethub_token")) : ""}" class="btn g sm" download>Download CSV</a>
+        <button class="btn g sm" onclick="window.print()">Print</button>
+      </div>
     </div>
 
     <div class="rep-sheet card">
+      <div class="report-scroll-helper">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>
+        <span>Swipe horizontally to inspect all ${repData.headers.length || 0} columns</span>
+      </div>
       <div class="tw">
         <table>
           <thead>
@@ -1959,12 +2225,69 @@ const NAV = [
   ["admin", () => t("nav_admin"), () => can("user.manage")]
 ];
 
+function toggleMobileDrawer(force) {
+  const overlay = $("#drawerOverlay");
+  if (!overlay) return;
+  const isOpen = force !== undefined ? force : !overlay.classList.contains("open");
+  overlay.classList.toggle("open", isOpen);
+  document.body.style.overflow = isOpen ? "hidden" : "";
+}
+
+function toggleMobileSearch(force) {
+  const bar = $("#mobileSearchBar");
+  if (!bar) return;
+  const isOpen = force !== undefined ? force : !bar.classList.contains("open");
+  bar.classList.toggle("open", isOpen);
+  if (isOpen) {
+    const inp = $("#mobileQueryInput");
+    if (inp) setTimeout(() => inp.focus(), 100);
+  }
+}
+
 async function go(v, a, back) {
   if (!back) HIST.push([v, a]);
-  $("#nav").innerHTML = NAV.filter(n => n[2]()).map(n => `<button data-a="nav" data-id="${n[0]}" class="${n[0] === v ? "on" : ""}">${n[1]()}</button>`).join("");
-  $("#main").innerHTML = `<p class="mu" style="padding:2rem 0">Loading...</p>`;
+
+  // 1. Desktop Nav
+  const dNav = $("#nav");
+  if (dNav) {
+    dNav.innerHTML = NAV.filter(n => n[2]()).map(n => `<button data-a="nav" data-id="${n[0]}" class="${n[0] === v ? "on" : ""}">${n[1]()}</button>`).join("");
+  }
+
+  // 2. Mobile Bottom Nav active state
+  $$(".bottom-nav-btn").forEach(btn => {
+    const bid = btn.dataset.id;
+    if (bid === v) {
+      btn.classList.add("active");
+    } else if (bid === "menu-drawer" && !["dash", "assets", "comp", "wo"].includes(v)) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  // 3. Mobile Drawer active state
+  $$(".drawer-item").forEach(item => {
+    item.classList.toggle("active", item.dataset.id === v);
+  });
+
+  // 4. Auto-close drawer & search
+  toggleMobileDrawer(false);
+  toggleMobileSearch(false);
+
+  // 5. Reset scroll
+  window.scrollTo({ top: 0, behavior: "instant" });
+  const mainEl = $("#main");
+  if (mainEl) {
+    mainEl.innerHTML = `<p class="mu" style="padding:2rem 0">Loading...</p>`;
+    mainEl.scrollTop = 0;
+  }
+
   try {
-    $("#main").innerHTML = await V[v](a);
+    if (V[v]) {
+      mainEl.innerHTML = await V[v](a);
+    } else {
+      mainEl.innerHTML = `<p class="err">View not found: ${esc(v)}</p>`;
+    }
     const pq = $("#pq");
     if (pq) pq.onsubmit = e => { e.preventDefault(); go("parts", pq.querySelector("input").value); };
     const btnGen = $("#btnGenRep");
@@ -1975,9 +2298,23 @@ async function go(v, a, back) {
         $("#btnCsvRep").href = `/api/reports/export?type=${$("#repType").value}&format=csv` + (tok ? `&token=${encodeURIComponent(tok)}` : "");
       };
     }
+
+    // Attach secondary KPIs accordion toggle on dashboard
+    const btnToggleKpis = $("#btnToggleMoreKpis");
+    if (btnToggleKpis) {
+      btnToggleKpis.onclick = () => {
+        const sec = $("#secondaryKpisContainer");
+        if (sec) {
+          const isHidden = sec.style.display === "none";
+          sec.style.display = isHidden ? "grid" : "none";
+          btnToggleKpis.querySelector("span").textContent = isHidden ? (t("collapse_kpis") || "Show Fewer Metrics ▴") : (t("all_kpis") || "Show All Fleet & Store Metrics (9 more) ▾");
+        }
+      };
+    }
+
     updateAlertBadge();
   } catch (e) {
-    $("#main").innerHTML = `<p class="err">${esc(e.message)}</p>`;
+    mainEl.innerHTML = `<p class="err">${esc(e.message)}</p>`;
   }
 }
 
@@ -2004,6 +2341,8 @@ const done = m => {
 
 // ---------------- ACTIONS ----------------
 ACT.nav = d => go(d.id);
+ACT.toggleDrawer = () => toggleMobileDrawer();
+ACT.toggleSearch = () => toggleMobileSearch();
 ACT.open = d => go("asset", d.id);
 ACT.back = () => {
   HIST.pop();
@@ -2898,8 +3237,12 @@ ACT.clearDemo = async () => {
 
 // ---------------- APP SHELL & BOOT ----------------
 function shell() {
+  const userInitials = (ME.name || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const userRoleFormatted = (ME.role || "").replace(/_/g, " ");
+
   R.innerHTML = `
-    <header class="top noprint">
+    <!-- A. DESKTOP HEADER (>= 1024px) -->
+    <header class="top desktop-header noprint">
       <div style="display:flex;align-items:center;gap:.65rem">
         <img src="/assets/logo.webp"  alt="National Industries Company" style="height:2.25rem;max-width:5.5rem;object-fit:contain">
         <b class="brand">${t("app_title")}</b>
@@ -2920,34 +3263,287 @@ function shell() {
         ${can("asset.view") ? `
           <button id="notifBadge" class="badge-bell" data-a="nav" data-id="alerts">🔔 ${t("alerts")}</button>
         ` : ""}
-        <span class="m">${esc(ME.name)} · <span class="chip c-verified">${esc(ME.role.replace("_", " "))}</span></span>
+        <span class="m">${esc(ME.name)} · <span class="chip c-verified">${esc(userRoleFormatted)}</span></span>
         <button class="btn g sm" data-a="out">${t("sign_out")}</button>
       </div>
     </header>
-    <nav class="nav noprint" id="nav"></nav>
+    <nav class="nav desktop-nav noprint" id="nav"></nav>
+
+    <!-- B. MOBILE HEADER (< 1024px) -->
+    <header class="mobile-header noprint">
+      <div class="mobile-header-left">
+        <button class="icon-btn" id="btnMobileMenu" data-a="toggleDrawer" aria-label="Open mobile navigation">
+          <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+        </button>
+        <div class="mobile-header-brand" data-a="nav" data-id="dash" style="cursor:pointer">
+          <img src="/assets/logo.webp" alt="NIC Kuwait">
+          <span>FleetHub</span>
+        </div>
+      </div>
+      <div class="mobile-header-right">
+        ${can("asset.view") ? `
+          <button class="icon-btn" id="btnMobileSearchToggle" data-a="toggleSearch" aria-label="Search fleet">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35" stroke-linecap="round"/></svg>
+          </button>
+          <button class="icon-btn" id="btnMobileAlerts" data-a="nav" data-id="alerts" aria-label="Notifications & Alerts">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </button>
+        ` : ""}
+        <button class="icon-btn" id="btnMobileUser" data-a="toggleDrawer" aria-label="User profile">
+          <div style="width:28px;height:28px;border-radius:9999px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:.75rem;font-weight:700">
+            ${userInitials}
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <!-- C. SLIDE-DOWN MOBILE SEARCH BAR -->
+    <div class="mobile-search-bar noprint" id="mobileSearchBar">
+      <form class="mobile-search-form" id="mobileSearchForm">
+        <input id="mobileQueryInput" placeholder="${esc(t("quick_search") || "Search fleet, parts, work orders...")}" aria-label="Search">
+        <button class="btn sm" type="submit">Search</button>
+        <button class="icon-btn" type="button" data-a="toggleSearch" aria-label="Close search">✕</button>
+      </form>
+    </div>
+
+    <!-- D. MOBILE SLIDE-OUT DRAWER -->
+    <div class="mobile-drawer-overlay noprint" id="drawerOverlay">
+      <div class="mobile-drawer" id="mobileDrawer">
+        <div class="drawer-header">
+          <div class="brand" style="font-size:1.15rem">
+            <img src="/assets/logo.webp" alt="NIC Kuwait" style="height:2rem;max-width:5rem;object-fit:contain;margin-right:.3rem">
+            FleetHub
+          </div>
+          <button class="icon-btn" data-close-drawer aria-label="Close drawer">✕</button>
+        </div>
+
+        <div class="drawer-profile">
+          <div class="drawer-avatar">${userInitials}</div>
+          <div class="drawer-user-info">
+            <div class="drawer-user-name">${esc(ME.name)}</div>
+            <div style="display:flex;align-items:center;gap:.35rem;margin-top:.25rem;flex-wrap:wrap">
+              <span class="chip c-verified" style="font-size:.6875rem">${esc(userRoleFormatted)}</span>
+              <small class="mu">NIC Kuwait</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-body">
+          <div class="drawer-group-title">Fleet & Workshop Operations</div>
+          ${can("asset.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="dash">
+              <span class="drawer-item-icon">📊</span>
+              <span>${t("nav_dash")}</span>
+            </button>
+            <button class="drawer-item" data-a="nav" data-id="assets">
+              <span class="drawer-item-icon">🚚</span>
+              <span>${t("nav_assets")}</span>
+            </button>
+          ` : ""}
+          ${any("complaint.create", "complaint.review", "asset.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="comp">
+              <span class="drawer-item-icon">⚠️</span>
+              <span>${t("nav_comp")}</span>
+            </button>
+          ` : ""}
+          ${can("wo.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="wo">
+              <span class="drawer-item-icon">🛠️</span>
+              <span>${t("nav_wo")}</span>
+            </button>
+          ` : ""}
+
+          ${any("inventory.view", "purchase.create", "supplier.view") ? `
+            <div class="drawer-group-title" style="margin-top:.75rem">Heavy Store & Inventory</div>
+          ` : ""}
+          ${can("inventory.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="parts">
+              <span class="drawer-item-icon">📦</span>
+              <span>${t("nav_parts")}</span>
+            </button>
+          ` : ""}
+          ${any("purchase.create", "purchase.approve", "purchase.record") ? `
+            <button class="drawer-item" data-a="nav" data-id="pur">
+              <span class="drawer-item-icon">🛒</span>
+              <span>${t("nav_pur")}</span>
+            </button>
+          ` : ""}
+          ${can("supplier.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="sup">
+              <span class="drawer-item-icon">🏢</span>
+              <span>${t("nav_sup")}</span>
+            </button>
+          ` : ""}
+
+          ${any("expense.view", "historical.view", "report.view") ? `
+            <div class="drawer-group-title" style="margin-top:.75rem">Finance & Compliance</div>
+          ` : ""}
+          ${can("expense.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="exp">
+              <span class="drawer-item-icon">💵</span>
+              <span>${t("nav_exp")}</span>
+            </button>
+          ` : ""}
+          ${can("historical.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="hist">
+              <span class="drawer-item-icon">📜</span>
+              <span>${t("nav_hist")}</span>
+            </button>
+          ` : ""}
+          ${can("report.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="reports">
+              <span class="drawer-item-icon">📈</span>
+              <span>${t("nav_reports")}</span>
+            </button>
+          ` : ""}
+          ${can("asset.view") ? `
+            <button class="drawer-item" data-a="nav" data-id="ws">
+              <span class="drawer-item-icon">📍</span>
+              <span>${t("nav_ws")}</span>
+            </button>
+            <button class="drawer-item" data-a="nav" data-id="alerts">
+              <span class="drawer-item-icon">🔔</span>
+              <span>${t("alerts")}</span>
+            </button>
+          ` : ""}
+
+          ${can("user.manage") ? `
+            <div class="drawer-group-title" style="margin-top:.75rem">Administration</div>
+            <button class="drawer-item" data-a="nav" data-id="admin">
+              <span class="drawer-item-icon">👥</span>
+              <span>${t("nav_admin")}</span>
+            </button>
+          ` : ""}
+        </div>
+
+        <div class="drawer-footer">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+            <span style="font-size:.8rem;font-weight:600;color:var(--mu)">Language:</span>
+            <select class="lang-select" id="drawerLangSel" style="flex:1;max-width:11rem">
+              <option value="en" ${CUR_LANG === "en" ? "selected" : ""}>🇬🇧 English</option>
+              <option value="hi" ${CUR_LANG === "hi" ? "selected" : ""}>🇮🇳 हिन्दी</option>
+              <option value="ar" ${CUR_LANG === "ar" ? "selected" : ""}>🇰🇼 العربية</option>
+            </select>
+          </div>
+          <button class="btn g sm btn-install-pwa" data-action="install-pwa" style="width:100%;min-height:44px;display:none;align-items:center;justify-content:center;gap:.4rem">
+            📱 Install App
+          </button>
+          <button class="btn g sm" data-a="out" style="width:100%;min-height:44px">
+            ${t("sign_out")}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- E. MAIN APP WRAPPER -->
     <main class="wrap" id="main"></main>
+
+    <!-- F. MOBILE BOTTOM NAVIGATION (< 1024px) -->
+    <nav class="mobile-bottom-nav noprint" id="mobileBottomNav">
+      <button class="bottom-nav-btn active" data-a="nav" data-id="dash">
+        <span class="bottom-nav-icon">📊</span>
+        <span class="bottom-nav-label">${t("nav_dash")}</span>
+      </button>
+      <button class="bottom-nav-btn" data-a="nav" data-id="assets">
+        <span class="bottom-nav-icon">🚚</span>
+        <span class="bottom-nav-label">${t("nav_assets")}</span>
+      </button>
+      <button class="bottom-nav-btn" data-a="nav" data-id="comp">
+        <span class="bottom-nav-icon">⚠️</span>
+        <span class="bottom-nav-label">${t("nav_comp")}</span>
+      </button>
+      <button class="bottom-nav-btn" data-a="nav" data-id="wo">
+        <span class="bottom-nav-icon">🛠️</span>
+        <span class="bottom-nav-label">Workshop</span>
+      </button>
+      <button class="bottom-nav-btn" data-a="toggleDrawer" data-id="menu-drawer">
+        <span class="bottom-nav-icon">☰</span>
+        <span class="bottom-nav-label">${t("menu") || "Menu"}</span>
+      </button>
+    </nav>
   `;
 
+  // Desktop search form submission
   const g = $("#gs");
   if (g) g.onsubmit = e => {
     e.preventDefault();
     go("search", $("#q").value);
   };
 
+  // Mobile search form submission
+  const mg = $("#mobileSearchForm");
+  if (mg) mg.onsubmit = e => {
+    e.preventDefault();
+    const val = $("#mobileQueryInput")?.value || "";
+    toggleMobileSearch(false);
+    go("search", val);
+  };
+
+  // Language selectors
+  const handleLang = async lang => {
+    CUR_LANG = lang;
+    localStorage.setItem("fleethub_lang", CUR_LANG);
+    applyLanguageLayout();
+    await post("/user/lang", { lang: CUR_LANG }).catch(() => {});
+    shell();
+    refresh();
+  };
+
   const ls = $("#langSel");
-  if (ls) {
-    ls.onchange = async () => {
-      CUR_LANG = ls.value;
-      localStorage.setItem("fleethub_lang", CUR_LANG);
-      applyLanguageLayout();
-      await post("/user/lang", { lang: CUR_LANG }).catch(() => {});
-      shell();
-      refresh();
+  if (ls) ls.onchange = () => handleLang(ls.value);
+
+  const dls = $("#drawerLangSel");
+  if (dls) dls.onchange = () => handleLang(dls.value);
+
+  // Close drawer when clicking backdrop
+  const overlay = $("#drawerOverlay");
+  if (overlay) {
+    overlay.onclick = e => {
+      if (e.target === overlay || e.target.closest("[data-close-drawer]")) {
+        toggleMobileDrawer(false);
+      }
     };
   }
 }
 
 R.onclick = e => {
+  // Check viewmode switcher (Cards vs Table)
+  const vm = e.target.closest("[data-viewmode]");
+  if (vm) {
+    const mode = vm.dataset.viewmode;
+    CURRENT_TABLE_VIEW_MODE = mode;
+    localStorage.setItem("fleethub_table_view_mode", mode);
+    const container = $(`#${vm.dataset.target}`);
+    if (container) {
+      container.querySelectorAll(".view-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.viewmode === mode));
+      const wrapper = container.querySelector(".responsive-view-wrapper");
+      if (wrapper) wrapper.className = `responsive-view-wrapper ${mode}`;
+    }
+    return;
+  }
+
+  // Check card details expand toggle
+  const tog = e.target.closest("[data-toggle]");
+  if (tog) {
+    const targetId = tog.dataset.toggle;
+    const drawer = $(`#${targetId}`);
+    if (drawer) {
+      const isHidden = drawer.classList.toggle("hidden");
+      const span = tog.querySelector("span");
+      if (span) {
+        span.textContent = isHidden ? (t("more_details") || "More Details ▾") : (t("hide_details") || "Hide Details ▴");
+      }
+    }
+    return;
+  }
+
+  // Check drawer close
+  if (e.target.closest("[data-close-drawer]")) {
+    toggleMobileDrawer(false);
+    return;
+  }
+
+  // Standard data-a actions
   const b = e.target.closest("[data-a]");
   if (b && ACT[b.dataset.a]) run(() => ACT[b.dataset.a](b.dataset));
 };
@@ -3022,13 +3618,22 @@ async function boot() {
     ME = null;
   }
   if (ME) {
+    window.ME = ME;
     shell();
     HIST = [];
     go(can("asset.view") ? "dash" : "comp");
   } else {
+    window.ME = null;
     loginView();
   }
 }
+
+// Expose core navigation on window for seamless testability and console access
+window.go = go;
+window.shell = shell;
+window.ACT = ACT;
+window.boot = boot;
+window.getME = () => ME;
 
 boot();
 
